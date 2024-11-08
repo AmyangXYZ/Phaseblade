@@ -1,4 +1,6 @@
-# Phaseblade <img src="./phaseblade.png" align="top" alt="Phaseblade Logo" height="36">
+# Phaseblade 
+
+<p align="center"><img src="./phaseblade.png" alt="Phaseblade Logo"></p>
 
 A deterministic real-time wireless network simulator designed for evaluating TDMA protocols and time synchronization in challenging environments. Built with Rust for high-performance node simulation (each running as independent thread with configurable clock drift), standard TCP/JSON for UI communication, and React/BabylonJS for 3D visualization. Phaseblade enables precise analysis of timing behaviors in wireless data transfer scenarios, making it ideal for studying network resilience and protocol performance under various field conditions.
 
