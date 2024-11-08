@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct AppPacket {
     pub src_id: u16,
     pub dst_id: u16,

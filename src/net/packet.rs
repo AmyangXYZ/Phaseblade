@@ -1,21 +1,21 @@
 use crate::app::AppPacket;
 
 pub struct NetPacket {
-    pub src_id: u16,
-    pub dst_id: u16,
-    pub app_packet: AppPacket,
+    pub src_addr: u32,
+    pub dst_addr: u32,
+    pub payload: AppPacket,
 }
 
 impl NetPacket {
-    pub fn new(src_id: u16, dst_id: u16, app_packet: AppPacket) -> Self {
+    pub fn new(src_addr: u32, dst_addr: u32, payload: AppPacket) -> Self {
         Self {
-            src_id,
-            dst_id,
-            app_packet,
+            src_addr,
+            dst_addr,
+            payload,
         }
     }
 
     pub fn into_app(self) -> AppPacket {
-        self.app_packet
+        self.payload
     }
 }

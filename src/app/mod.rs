@@ -1,5 +1,5 @@
 mod packet;
-mod protocol;
+mod stack;
 
 pub use packet::AppPacket;
-pub use protocol::AppProtocol;
+pub use stack::AppStack;

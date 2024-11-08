@@ -1,5 +1,5 @@
 mod packet;
-mod protocol;
+mod stack;
 
 pub use packet::PhyFrame;
-pub use protocol::PhyProtocol;
+pub use stack::PhyStack;

@@ -1,5 +1,5 @@
 mod packet;
-mod protocol;
+mod stack;
 
 pub use packet::NetPacket;
-pub use protocol::NetProtocol;
+pub use stack::NetStack;
