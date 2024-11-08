@@ -1,3 +1,6 @@
+use phaseblade::Node;
+
 fn main() {
-    println!("Hello, world!");
+    let node = Node::new(1, 0x00CAFE);
+    node.run();
 }
