@@ -17,8 +17,9 @@ impl Orchestrator {
     }
 
     pub fn add_node(&mut self, eui64: u64, node_handle: NodeHandle) {
+        let id = node_handle.id;
         self.nodes.insert(eui64, node_handle);
-        println!("[Orchestrator] added node {:016X}", eui64);
+        println!("[Orchestrator] added node <{}-{:016X}>", id, eui64);
     }
 
     pub fn run(self) {
@@ -51,8 +52,8 @@ impl Orchestrator {
                                 println!("[Orchestrator] destination node {} not found", dst_eui64);
                             }
                         }
-                        Err(e) => {
-                            println!("[Orchestrator] node <{:016X}> stopped: {}", eui64, e);
+                        Err(_) => {
+                            println!("[Orchestrator] node <{:016X}> stopped", eui64);
                             break;
                         }
                     }
@@ -69,7 +70,7 @@ impl Orchestrator {
 
         // Wait for all threads to complete
         for t in handles {
-            t.join().unwrap();
+            t.join().expect("thread panicked");
         }
     }
 }
