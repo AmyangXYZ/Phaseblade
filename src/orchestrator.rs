@@ -1,15 +1,12 @@
-use crate::phy::PhyFrame;
+use crate::node::NodeHandle;
 use std::collections::HashMap;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
-
-pub struct NodeHandle {
-    pub to_node_sender: Sender<PhyFrame>,
-    pub from_node_receiver: Receiver<PhyFrame>,
-}
+use std::thread;
+use std::time::Duration;
 
 pub struct Orchestrator {
-    nodes: HashMap<u64, NodeHandle>,
+    pub nodes: HashMap<u64, NodeHandle>,
 }
 
 impl Orchestrator {
@@ -21,7 +18,7 @@ impl Orchestrator {
 
     pub fn add_node(&mut self, eui64: u64, node_handle: NodeHandle) {
         self.nodes.insert(eui64, node_handle);
-        println!("[Orchestrator] added node {}", eui64);
+        println!("[Orchestrator] added node {:016X}", eui64);
     }
 
     pub fn run(self) {
@@ -35,32 +32,44 @@ impl Orchestrator {
         let handles: Vec<_> = self
             .nodes
             .into_iter()
-            .map(|(eui64, node)| {
+            .map(|(eui64, node_handle)| {
                 let senders = senders.clone();
-                let receiver = node.from_node_receiver;
+                let receiver = node_handle.from_node_receiver;
 
-                std::thread::spawn(move || loop {
+                let t = thread::spawn(move || loop {
                     match receiver.recv() {
                         Ok(phy_frame) => {
                             let dst_eui64 = phy_frame.payload.dst_eui64;
                             if let Some(sender) = senders.lock().unwrap().get(&dst_eui64) {
-                                sender.send(phy_frame).unwrap();
+                                if let Err(e) = sender.send(phy_frame) {
+                                    println!(
+                                        "[Orchestrator] failed to send to node {}: {}",
+                                        dst_eui64, e
+                                    );
+                                }
                             } else {
                                 println!("[Orchestrator] destination node {} not found", dst_eui64);
                             }
                         }
                         Err(e) => {
-                            eprintln!("[Orchestrator] node {} receiver error: {}", eui64, e);
+                            println!("[Orchestrator] node <{:016X}> stopped: {}", eui64, e);
                             break;
                         }
                     }
-                })
+                });
+
+                if eui64 == 1 {
+                    thread::sleep(Duration::from_secs(3));
+                    node_handle.is_running.store(false, Ordering::Relaxed);
+                }
+
+                t
             })
             .collect();
 
         // Wait for all threads to complete
-        for handle in handles {
-            handle.join().unwrap();
+        for t in handles {
+            t.join().unwrap();
         }
     }
 }

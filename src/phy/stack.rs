@@ -1,6 +1,9 @@
+use crate::constants::*;
 use crate::mac::MacPacket;
 use crate::phy::PhyFrame;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
 use std::thread;
 
 pub struct PhyStack {
@@ -10,6 +13,7 @@ pub struct PhyStack {
     from_mac_receiver: Receiver<MacPacket>,
     to_orchestrator_sender: Sender<PhyFrame>,
     from_orchestrator_receiver: Receiver<PhyFrame>,
+    is_running: Arc<AtomicBool>,
 }
 
 impl PhyStack {
@@ -20,6 +24,7 @@ impl PhyStack {
         from_mac_receiver: Receiver<MacPacket>,
         to_orchestrator_sender: Sender<PhyFrame>,
         from_orchestrator_receiver: Receiver<PhyFrame>,
+        is_running: Arc<AtomicBool>,
     ) -> Self {
         Self {
             id,
@@ -28,6 +33,7 @@ impl PhyStack {
             from_mac_receiver,
             to_orchestrator_sender,
             from_orchestrator_receiver,
+            is_running,
         }
     }
 
@@ -40,22 +46,35 @@ impl PhyStack {
         let to_orchestrator_sender = self.to_orchestrator_sender;
         let from_orchestrator_receiver = self.from_orchestrator_receiver;
 
-        let mac_handler = thread::spawn(move || loop {
-            let mac_packet = from_mac_receiver.recv().unwrap();
+        let is_running_mac_handler = Arc::clone(&self.is_running);
+        let is_running_orchestrator_handler = Arc::clone(&self.is_running);
 
-            if let Err(e) = to_orchestrator_sender.send(PhyFrame::new(mac_packet)) {
-                println!(
-                    "[{}-{:016X} PHY] failed to send to orchestrator: {}",
-                    id, eui64, e
-                );
+        let mac_handler = thread::spawn(move || {
+            while is_running_mac_handler.load(Ordering::Relaxed) {
+                match from_mac_receiver.recv_timeout(STACK_THREAD_CHECK_INTERVAL) {
+                    Ok(mac_packet) => {
+                        if let Err(e) = to_orchestrator_sender.send(PhyFrame::new(mac_packet)) {
+                            println!(
+                                "[{}-{:016X} PHY] failed to send to orchestrator: {}",
+                                id, eui64, e
+                            );
+                        }
+                    }
+                    _ => {}
+                }
             }
         });
 
-        let orchestrator_handler = thread::spawn(move || loop {
-            let phy_frame = from_orchestrator_receiver.recv().unwrap();
-
-            if let Err(e) = to_mac_sender.send(phy_frame.into_mac()) {
-                println!("[{}-{:016X} PHY] failed to send to mac: {}", id, eui64, e);
+        let orchestrator_handler = thread::spawn(move || {
+            while is_running_orchestrator_handler.load(Ordering::Relaxed) {
+                match from_orchestrator_receiver.recv_timeout(STACK_THREAD_CHECK_INTERVAL) {
+                    Ok(phy_frame) => {
+                        if let Err(e) = to_mac_sender.send(phy_frame.into_mac()) {
+                            println!("[{}-{:016X} PHY] failed to send to mac: {}", id, eui64, e);
+                        }
+                    }
+                    _ => {}
+                }
             }
         });
 
