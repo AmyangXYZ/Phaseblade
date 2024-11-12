@@ -33,29 +33,46 @@ A deterministic real-time wireless network simulator designed for evaluating TDM
 ## System Architecture
 
 ```
-Internal Simulation (Rust)                      External UI
-+---------------+                          +------------------+
-|  Node Thread  |                          |                  |
-|    (Rust)     | ----channel-+            |  React/BabylonJS |
-+---------------+             |            |        UI        |
-                              v            |                  |
-+---------------+     +--------------+     |                  |
-|  Node Thread  | --> | Orchestrator | --> |     TCP/JSON     |
-|    (Rust)     | --> | - UI Bridge  | --> |    Connection    |
-+---------------+     +--------------+     |                  |
-                              ^            |                  |
-+---------------+             |            |                  |
-|  Node Thread  | ----channel-+            |                  |
-|    (Rust)     |                          |                  |
-+---------------+                          +------------------+
-
+    Node 1                     Node 2
++-----------+              +-----------+
+|    App    |              |    App    |
+|   Stack   |              |   Stack   |
++-----------+              +-----------+
+     ↑↓                         ↑↓
++-----------+              +-----------+
+|    Net    |              |    Net    |
+|   Stack   |              |   Stack   |
++-----------+              +-----------+
+     ↑↓                         ↑↓
++-----------+              +-----------+
+|    MAC    |              |    MAC    |
+|   Stack   |              |   Stack   |
++-----------+              +-----------+
+     ↑↓                         ↑↓
++-----------+              +-----------+
+|    PHY    |              |    PHY    |
+|   Stack   |              |   Stack   |
++-----------+              +-----------+
+      |                          |
+      |   +------------------+   |
+      +-> |   Orchestrator   | <-+
+          +------------------+
+                   ↑↓
+             +------------+
+             |  TCP/JSON  |
+             |   Bridge   |
+             +------------+
+                   ↑↓
+     +-----------------------------+
+     | Electron/React/BabylonJS UI |
+     +-----------------------------+
 ```
 
 Core Flow:
 
 1. Independent nodes run as Rust threads
-2. Nodes exchange packets via channels through coordinator
-3. Coordinator simulates wireless conditions (delay/loss)
+2. Packets are exchanged via synchronous channels across stacks
+3. Orchestrator forwards packets between nodes and simulates wireless conditions (delay/loss)
 4. UI receives network state via TCP/JSON
 
 ## Platform Vision
