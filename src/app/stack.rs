@@ -1,73 +1,48 @@
-use crate::app::AppPacket;
-use crate::constants::*;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
+use crate::{Message, Task};
 
 pub struct AppStack {
+    pub priority: u8,
+    execution_time: u64, // in cycles
+    messages: Vec<Message>,
     id: u16,
-    eui64: u64,
-    to_net_sender: Sender<AppPacket>,
-    from_net_receiver: Receiver<AppPacket>,
-    is_running: Arc<AtomicBool>,
+}
+
+impl Task for AppStack {
+    fn get_id(&self) -> u16 {
+        self.id
+    }
+
+    fn get_priority(&self) -> u8 {
+        self.priority
+    }
+
+    fn get_execution_time(&mut self) -> u64 {
+        self.execution_time = 5;
+        self.execution_time
+    }
+
+    fn execute(&mut self) -> Vec<Message> {
+        self.execution_time -= 1;
+
+        if self.execution_time == 0 {
+            println!("Executing app stack task ");
+        }
+
+        vec![]
+    }
+
+    fn enqueue_message(&mut self, message: Message) {
+        self.messages.push(message);
+    }
 }
 
 impl AppStack {
-    pub fn new(
-        id: u16,
-        eui64: u64,
-        to_net_sender: Sender<AppPacket>,
-        from_net_receiver: Receiver<AppPacket>,
-        is_running: Arc<AtomicBool>,
-    ) -> Self {
+    pub fn new(priority: u8, id: u16) -> Self {
         Self {
+            priority,
+            execution_time: 0,
+            messages: Vec::new(),
             id,
-            eui64,
-            to_net_sender,
-            from_net_receiver,
-            is_running,
         }
-    }
-
-    pub fn run(self) {
-        let id = self.id;
-        let eui64 = self.eui64;
-
-        let from_net_receiver = self.from_net_receiver;
-        let to_net_sender = self.to_net_sender;
-        let is_running_net_handler = Arc::clone(&self.is_running);
-        let is_running_app_handler = Arc::clone(&self.is_running);
-
-        let net_handler = thread::spawn(move || {
-            while is_running_net_handler.load(Ordering::Relaxed) {
-                match from_net_receiver.recv_timeout(STACK_THREAD_CHECK_INTERVAL) {
-                    Ok(app_packet) => {
-                        println!(
-                            "[{}-{:016X} APP] received: {:?}",
-                            id, eui64, app_packet.data
-                        );
-                    }
-                    _ => {}
-                }
-            }
-        });
-
-        let app_handler = thread::spawn(move || {
-            while is_running_app_handler.load(Ordering::Relaxed) {
-                if id != 2 {
-                    let app_packet = AppPacket::new(id, 2, "hello".as_bytes().try_into().unwrap());
-                    println!("[{}-{:016X} APP] sending: {:?}", id, eui64, app_packet.data);
-                    if let Err(e) = to_net_sender.send(app_packet) {
-                        println!("[{}-{:016X} APP] failed to send to net: {}", id, eui64, e);
-                    }
-                    thread::sleep(Duration::from_secs(1));
-                }
-            }
-        });
-
-        net_handler.join().unwrap();
-        app_handler.join().unwrap();
     }
 }

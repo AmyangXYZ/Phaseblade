@@ -14,11 +14,32 @@ A deterministic real-time wireless network simulator designed for evaluating TDM
 
 ### Virtual Time Management
 
-- Base cycles from Orchestrator (finest time granularity)
-- Configurable node ticks (N cycles = 1 node tick)
-- Per-node tick rate drift (e.g., 99/100/101 cycles per tick)
-- Machine-independent timing behavior
-- Reproducible results across platforms
+- Cycle-based synchronization:
+
+  - Orchestrator broadcasts atomic cycle counts (finest granularity)
+  - Each node maps N cycles to 1 local tick
+  - Configurable N per node simulates clock drift (e.g., 99/100/101)
+  - Variable cycle offsets simulate asynchronous node startup
+
+- Node tick management:
+
+  - Hardware timer abstraction via tick interrupts
+  - Preemptive task scheduling based on ticks
+  - Local time tracking with tick counter
+  - Hard real-time task constraints (e.g., TDMA)
+
+- Virtual time synchronization:
+
+  - MAC layer maintains adjustable virtual clock
+  - Time sync packets allow clock corrections
+  - Maps local ticks to global TDMA schedule
+  - Handles node time drift and skew compensation
+
+- Deterministic behavior:
+  - Machine-independent timing via cycle counts
+  - Reproducible network experiments
+  - Configurable time drift scenarios
+  - Analyzable timing performance
 
 ### Digital Twin Capabilities
 
@@ -99,7 +120,7 @@ Example Timing:
 Orchestrator: 1-2-3-4-5-6-7-8-9-... (base cycles)
 Node A:       ↑       ↑       ↑     (tick every 100 cycles)
 Node B:       ↑      ↑      ↑      (tick every 99 cycles)
-Node C:       ↑        ↑        ↑   (tick every 101 cycles)
+Node C:         ↑       ↑       ↑   (tick every 101 cycles and with 1 offset)
 ```
 
 ## Platform Vision
