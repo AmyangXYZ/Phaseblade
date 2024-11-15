@@ -6,19 +6,19 @@ A deterministic real-time wireless network simulator designed for evaluating TDM
 
 ### Implementation-Focused Design
 
-- Thread-based network stacks implement RTOS task structure
+- Cycle/Tick-accurate RTOS task scheduler for protocol stacks
+- Priority-based preemptive multitasking
+- Realistic timing and resource constraints
 - Direct code portability to deployment targets
-- Real concurrent processing and resource handling
-- Natural mapping to embedded systems
 - Interactive protocol demonstration and validation
 
 ### Virtual Time Management
 
+- Base cycles from Orchestrator (finest time granularity)
+- Configurable node ticks (N cycles = 1 node tick)
+- Per-node tick rate drift (e.g., 99/100/101 cycles per tick)
 - Machine-independent timing behavior
 - Reproducible results across platforms
-- Controlled clock drift simulation
-- No real-time platform requirements
-- Deterministic protocol evaluation
 
 ### Digital Twin Capabilities
 
@@ -53,25 +53,54 @@ A deterministic real-time wireless network simulator designed for evaluating TDM
 +-----------+              +-----------+
       |                          |
       |   +------------------+   |
-      +-> |   Orchestrator   | <-+
+      |   |   Orchestrator   |   |
+      |   | (Cycle Counter)  |   |
+      |   +------------------+   |
+      |            ↑↓           |
+      |   +------------------+  |
+      +-> |  Cycle Broadcast | <+
           +------------------+
-                   ↑↓
-             +------------+
-             |  TCP/JSON  |
-             |   Tunnel   |
-             +------------+
-                   ↑↓
-     +-----------------------------+
-     | Electron/React/BabylonJS UI |
-     +-----------------------------+
+
+  Node Internal (Detail)
++------------------------+
+|     Tick Scheduler     |
+|  (N cycles = 1 tick)   |
++------------------------+
+          ↑↓
++------------------------+
+|    Priority Queue      |
+|  Critical: MAC TDMA    |
+|  High:    MAC Other    |
+|  Normal:  Net Stack    |
+|  Low:     App Stack    |
++------------------------+
+          ↑↓
++------------------------+
+|    Task Execution      |
+|  - Preemption Support  |
+|  - Cycle Counting      |
+|  - Resource Control    |
++------------------------+
 ```
 
 Core Flow:
 
-1. Independent nodes run as Rust threads
-2. Packets are exchanged via synchronous channels across stacks
-3. Orchestrator forwards packets between nodes and simulates wireless conditions (delay/loss)
+1. Orchestrator broadcasts base cycles to all nodes
+2. Each node maintains its own tick counter simulating clock drift:
+   - Node A: 100 cycles = 1 tick (nominal)
+   - Node B: 99 cycles = 1 tick (fast clock)
+   - Node C: 101 cycles = 1 tick (slow clock)
+3. RTOS tasks execute based on node ticks
 4. UI receives network state via TCP/JSON
+
+Example Timing:
+
+```
+Orchestrator: 1-2-3-4-5-6-7-8-9-... (base cycles)
+Node A:       ↑       ↑       ↑     (tick every 100 cycles)
+Node B:       ↑      ↑      ↑      (tick every 99 cycles)
+Node C:       ↑        ↑        ↑   (tick every 101 cycles)
+```
 
 ## Platform Vision
 
@@ -86,26 +115,26 @@ Phaseblade aims to be a modern network simulation platform that enables:
 
 Core Platform [WIP]:
 
-- [ ] Thread-based node runtime with independent clocks
-- [ ] Channel-based communication framework
-- [ ] Event-driven simulation engine
-- [ ] Configurable network environment
+- [ ] Cycle-based orchestration with node tick management
+- [ ] RTOS-like task scheduler with preemption
+- [ ] Priority-based protocol stack execution
+- [ ] Configurable per-node clock drift simulation
 - [ ] Real-time 3D visualization via TCP/JSON
 
 Time-Sensitive Networking:
 
+- [ ] TDMA slot management with drift compensation
 - [ ] 802.1Qbv Time-Aware Shaper
 - [ ] 802.1CB Frame Replication and Elimination
 - [ ] 802.1AS-like Time Synchronization
 - [ ] Gate Control List scheduling
-- [ ] Stream reservation
 
 Protocol Development:
 
-- [ ] Base protocol primitives
-- [ ] Protocol configuration interface
-- [ ] Flexible packet structure
-- [ ] Priority scheduling
+- [ ] Task-based protocol implementation framework
+- [ ] Cycle-accurate timing control
+- [ ] Configurable execution timing
+- [ ] Priority-based resource scheduling
 - [ ] State machine framework
 
 Security & Reliability:
@@ -118,12 +147,8 @@ Security & Reliability:
 
 Network Research:
 
-- [ ] Time accuracy measurement
-- [ ] Performance metrics collection
-- [ ] Scenario configuration
+- [ ] Clock drift analysis
+- [ ] Task execution timing measurement
+- [ ] Protocol timing verification
 - [ ] Network condition simulation
 - [ ] Experiment reproducibility
-
-```
-
-```
