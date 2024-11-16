@@ -44,6 +44,7 @@ pub struct NodeRuntime {
     cycle_receiver: Receiver<u64>,
     cycle_completed_sender: SyncSender<()>,
     tasks: HashMap<u16, Box<dyn Task>>,
+    task_names: HashMap<u16, String>,
     task_schedule: Vec<u16>,
 }
 
@@ -58,12 +59,16 @@ impl NodeRuntime {
             cycle_receiver,
             cycle_completed_sender,
             tasks: HashMap::new(),
+            task_names: HashMap::new(),
             task_schedule: Vec::new(),
         }
     }
 
     pub fn register_task(&mut self, task: Box<dyn Task>) {
-        self.tasks.insert(task.get_id(), task);
+        let id = task.get_id();
+        let name = task.get_name();
+        self.tasks.insert(id, task);
+        self.task_names.insert(id, name);
     }
 
     pub fn run(&mut self) {
@@ -73,9 +78,16 @@ impl NodeRuntime {
 
                 // new tick
                 if local_cycle % self.state.lock().unwrap().cycles_per_tick == 0 {
-                    println!("Scheduling tasks {}", local_cycle);
+                    let tick = local_cycle / self.state.lock().unwrap().cycles_per_tick;
                     self.schedule_tasks();
-                    println!("Scheduled tasks: {:?}", self.task_schedule);
+                    print!("Task schedule at tick {}: [", tick);
+                    for (i, task_id) in self.task_schedule.iter().enumerate() {
+                        if i > 0 {
+                            print!(", ");
+                        }
+                        print!("{}", self.task_names.get(task_id).unwrap());
+                    }
+                    println!("]");
                 }
 
                 if let Some(task_id) = self
@@ -85,7 +97,11 @@ impl NodeRuntime {
                     if let Some(task) = self.tasks.get_mut(task_id) {
                         let messages = task.execute();
                         for msg in messages {
-                            println!("sending msg to task {}", msg.dst_task);
+                            println!(
+                                "sending msg from {} to {}",
+                                self.task_names.get(&msg.src_task).unwrap(),
+                                self.task_names.get(&msg.dst_task).unwrap()
+                            );
                         }
                     }
                 }
@@ -100,11 +116,11 @@ impl NodeRuntime {
         // Collect tasks with their execution times and priorities
         let mut ready_tasks = Vec::new();
 
-        for (task_id, task) in self.tasks.iter_mut() {
+        for (_, task) in self.tasks.iter_mut() {
             let execution_time = task.get_execution_time();
             let priority = task.get_priority();
             if execution_time > 0 {
-                ready_tasks.push((priority, execution_time, task_id));
+                ready_tasks.push((priority, execution_time, task.get_id()));
             }
         }
 
@@ -118,7 +134,7 @@ impl NodeRuntime {
                 if current_cycle >= self.state.lock().unwrap().cycles_per_tick {
                     break;
                 }
-                self.task_schedule.push(*task_id);
+                self.task_schedule.push(task_id);
                 current_cycle += 1;
             }
             if current_cycle >= self.state.lock().unwrap().cycles_per_tick {

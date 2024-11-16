@@ -1,10 +1,12 @@
-use crate::{Message, Task};
+use crate::app::AppPacket;
+use crate::{Message, MessageQueue, Task};
 
 pub struct AppStack {
-    pub priority: u8,
-    execution_time: u64, // in cycles
-    messages: Vec<Message>,
+    name: String,
     id: u16,
+    priority: u8,
+    execution_time: u64,
+    messages: MessageQueue,
 }
 
 impl Task for AppStack {
@@ -12,12 +14,15 @@ impl Task for AppStack {
         self.id
     }
 
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
     fn get_priority(&self) -> u8 {
         self.priority
     }
 
     fn get_execution_time(&mut self) -> u64 {
-        self.execution_time = 5;
         self.execution_time
     }
 
@@ -25,24 +30,31 @@ impl Task for AppStack {
         self.execution_time -= 1;
 
         if self.execution_time == 0 {
-            println!("Executing app stack task ");
+            // actual execution logic here
+            return vec![Message::new(
+                self.get_id(),
+                1,
+                self.priority,
+                Box::new(AppPacket::new(0, 0, &[0x01])),
+            )];
         }
 
         vec![]
     }
 
     fn enqueue_message(&mut self, message: Message) {
-        self.messages.push(message);
+        self.messages.enqueue(message);
     }
 }
 
 impl AppStack {
-    pub fn new(priority: u8, id: u16) -> Self {
+    pub fn new(name: &str, id: u16, priority: u8) -> Self {
         Self {
-            priority,
-            execution_time: 0,
-            messages: Vec::new(),
+            name: name.to_string(),
             id,
+            priority,
+            execution_time: 5,
+            messages: MessageQueue::new(),
         }
     }
 }

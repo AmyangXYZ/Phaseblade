@@ -1,84 +1,59 @@
-use crate::constants::*;
-use crate::mac::MacPacket;
-use crate::phy::PhyFrame;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{Receiver, Sender};
-use std::sync::Arc;
-use std::thread;
+use crate::app::AppPacket;
+use crate::{Message, MessageQueue, Task};
 
 pub struct PhyStack {
+    name: String,
     id: u16,
-    eui64: u64,
-    to_mac_sender: Sender<MacPacket>,
-    from_mac_receiver: Receiver<MacPacket>,
-    to_orchestrator_sender: Sender<PhyFrame>,
-    from_orchestrator_receiver: Receiver<PhyFrame>,
-    is_running: Arc<AtomicBool>,
+    priority: u8,
+    execution_time: u64,
+    messages: MessageQueue,
+}
+
+impl Task for PhyStack {
+    fn get_id(&self) -> u16 {
+        self.id
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_priority(&self) -> u8 {
+        self.priority
+    }
+
+    fn get_execution_time(&mut self) -> u64 {
+        self.execution_time
+    }
+
+    fn execute(&mut self) -> Vec<Message> {
+        self.execution_time -= 1;
+
+        if self.execution_time == 0 {
+            return vec![Message::new(
+                self.get_id(),
+                1,
+                self.priority,
+                Box::new(AppPacket::new(0, 0, &[0x01])),
+            )];
+        }
+
+        vec![]
+    }
+
+    fn enqueue_message(&mut self, message: Message) {
+        self.messages.enqueue(message);
+    }
 }
 
 impl PhyStack {
-    pub fn new(
-        id: u16,
-        eui64: u64,
-        to_mac_sender: Sender<MacPacket>,
-        from_mac_receiver: Receiver<MacPacket>,
-        to_orchestrator_sender: Sender<PhyFrame>,
-        from_orchestrator_receiver: Receiver<PhyFrame>,
-        is_running: Arc<AtomicBool>,
-    ) -> Self {
+    pub fn new(name: &str, id: u16, priority: u8) -> Self {
         Self {
+            name: name.to_string(),
             id,
-            eui64,
-            to_mac_sender,
-            from_mac_receiver,
-            to_orchestrator_sender,
-            from_orchestrator_receiver,
-            is_running,
+            priority,
+            execution_time: 5,
+            messages: MessageQueue::new(),
         }
-    }
-
-    pub fn run(self) {
-        let id = self.id;
-        let eui64 = self.eui64;
-
-        let to_mac_sender = self.to_mac_sender;
-        let from_mac_receiver = self.from_mac_receiver;
-        let to_orchestrator_sender = self.to_orchestrator_sender;
-        let from_orchestrator_receiver = self.from_orchestrator_receiver;
-
-        let is_running_mac_handler = Arc::clone(&self.is_running);
-        let is_running_orchestrator_handler = Arc::clone(&self.is_running);
-
-        let mac_handler = thread::spawn(move || {
-            while is_running_mac_handler.load(Ordering::Relaxed) {
-                match from_mac_receiver.recv_timeout(STACK_THREAD_CHECK_INTERVAL) {
-                    Ok(mac_packet) => {
-                        if let Err(e) = to_orchestrator_sender.send(PhyFrame::new(mac_packet)) {
-                            println!(
-                                "[{}-{:016X} PHY] failed to send to orchestrator: {}",
-                                id, eui64, e
-                            );
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        });
-
-        let orchestrator_handler = thread::spawn(move || {
-            while is_running_orchestrator_handler.load(Ordering::Relaxed) {
-                match from_orchestrator_receiver.recv_timeout(STACK_THREAD_CHECK_INTERVAL) {
-                    Ok(phy_frame) => {
-                        if let Err(e) = to_mac_sender.send(phy_frame.into_mac()) {
-                            println!("[{}-{:016X} PHY] failed to send to mac: {}", id, eui64, e);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        });
-
-        mac_handler.join().unwrap();
-        orchestrator_handler.join().unwrap();
     }
 }
