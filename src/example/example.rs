@@ -1,11 +1,12 @@
-use phaseblade::tsch::{SensorTask, TschNode};
-use phaseblade::{Engine, Node};
+use phaseblade::tsch::TschNode;
+use phaseblade::Engine;
 
 fn main() {
     let mut engine = Engine::new(10, 100);
-    let mut tsch_node = TschNode::new(0, 20, 0);
-    tsch_node.register_task(Box::new(SensorTask::new(0, "sensor".to_string(), 1)));
-    engine.add_node(Box::new(tsch_node));
+    for i in 0..1 {
+        let tsch_node = TschNode::new(i, 10, 0, 100);
+        engine.add_node(Box::new(tsch_node));
+    }
 
-    engine.run(10);
+    engine.run(20);
 }

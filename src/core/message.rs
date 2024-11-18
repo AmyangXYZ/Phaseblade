@@ -1,11 +1,18 @@
+use crate::core::Packet;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-// message exchange between tasks
+/// Represents a message that can be exchanged between tasks
 pub trait Message {
     fn get_src_task(&self) -> u16;
     fn get_dst_task(&self) -> u16;
     fn get_priority(&self) -> u8;
+    fn has_packet(&self) -> bool {
+        false
+    }
+    fn get_packet(&self) -> Option<Box<dyn Packet>> {
+        None
+    }
 }
 
 // Priority queue wrapper for messages

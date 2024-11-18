@@ -1,9 +1,13 @@
 use crate::core::{Node, Packet, Task};
+use crate::tsch::{SensorTask, TschMacTask};
 use std::collections::{HashMap, VecDeque};
+
 pub struct TschNode {
     id: u16,
-    tick_interval: u64,
+    cycles_per_tick: u64,
     cycle_offset: u64,
+    local_time: f64,
+    clock_drift_factor: f64,
     tasks: HashMap<u16, Box<dyn Task>>,
     task_schedule: Vec<u16>,
     receive_queue: VecDeque<Box<dyn Packet>>,
@@ -11,16 +15,21 @@ pub struct TschNode {
 }
 
 impl TschNode {
-    pub fn new(id: u16, tick_interval: u64, cycle_offset: u64) -> Self {
-        TschNode {
+    pub fn new(id: u16, cycles_per_tick: u64, cycle_offset: u64, micros_per_tick: u64) -> Self {
+        let mut node = TschNode {
             id,
-            tick_interval,
+            cycles_per_tick,
             cycle_offset,
+            local_time: 100.0,
+            clock_drift_factor: 1.0,
             tasks: HashMap::new(),
             task_schedule: Vec::new(),
             receive_queue: VecDeque::new(),
             send_queue: Vec::new(),
-        }
+        };
+        node.register_task(Box::new(SensorTask::new(0, "sensor", 1, micros_per_tick)));
+        node.register_task(Box::new(TschMacTask::new(1, "mac", 7, micros_per_tick)));
+        node
     }
 }
 
@@ -33,62 +42,35 @@ impl Node for TschNode {
         self.cycle_offset
     }
 
-    fn get_tick_interval(&self) -> u64 {
-        self.tick_interval
+    fn get_cycles_per_tick(&self) -> u64 {
+        self.cycles_per_tick
     }
 
-    fn accept_packet(&mut self, incoming_packet: Box<dyn Packet>) {
-        self.receive_queue.push_back(incoming_packet);
+    fn get_local_time(&self) -> f64 {
+        self.local_time
     }
 
-    fn collect_packets(&mut self) -> Vec<Box<dyn Packet>> {
-        self.send_queue.drain(..).collect()
+    fn set_local_time(&mut self, local_time: f64) {
+        self.local_time = local_time;
     }
 
-    fn register_task(&mut self, task: Box<dyn Task>) {
-        self.tasks.insert(task.get_id(), task);
+    fn get_clock_drift_factor(&self) -> f64 {
+        self.clock_drift_factor
     }
 
-    fn construct_task_schedule(&mut self) {
-        self.task_schedule.clear();
-
-        // Collect tasks with their execution times and priorities
-        let mut ready_tasks = Vec::new();
-
-        for (_, task) in self.tasks.iter_mut() {
-            let execution_time = task.get_execution_time();
-            let priority = task.get_priority();
-            if execution_time > 0 {
-                ready_tasks.push((priority, execution_time, task.get_id()));
-            }
-        }
-
-        // Sort by priority (highest first)
-        ready_tasks.sort_by(|a, b| b.0.cmp(&a.0));
-
-        // Fill the schedule up to cycles_per_tick
-        let mut current_cycle = 0;
-        for (_priority, exec_time, task_id) in ready_tasks {
-            for _ in 0..exec_time {
-                if current_cycle >= self.get_tick_interval() {
-                    break;
-                }
-                self.task_schedule.push(task_id);
-                current_cycle += 1;
-            }
-            if current_cycle >= self.get_tick_interval() {
-                break;
-            }
-        }
+    fn get_receive_queue_mut(&mut self) -> &mut VecDeque<Box<dyn Packet>> {
+        &mut self.receive_queue
     }
 
-    fn get_scheduled_task(&self, local_cycle: u64) -> Option<u16> {
-        self.task_schedule.get(local_cycle as usize).cloned()
+    fn get_send_queue_mut(&mut self) -> &mut Vec<Box<dyn Packet>> {
+        &mut self.send_queue
     }
 
-    fn execute_task(&mut self, task_id: u16) {
-        if let Some(task) = self.tasks.get_mut(&task_id) {
-            task.execute();
-        }
+    fn get_task_schedule_mut(&mut self) -> &mut Vec<u16> {
+        &mut self.task_schedule
+    }
+
+    fn get_tasks_mut(&mut self) -> &mut HashMap<u16, Box<dyn Task>> {
+        &mut self.tasks
     }
 }
