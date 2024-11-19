@@ -1,15 +1,30 @@
 # Phaseblade
 
-A deterministic real-time network simulator built around a cycle-accurate time-triggered execution model. The simulation engine orchestrates network nodes through precise cycle counts, with each node implementing an RTOS-like preemptive task scheduler that maps configurable cycle counts to local ticks. Nodes maintain independent local time with configurable drift factors, enabling precise evaluation of TDMA protocols and time synchronization algorithms through reproducible network experiments. The platform includes real-time visualization via a React/Electron UI.
+A deterministic real-time network simulator built around a cycle-accurate time-triggered execution model. The simulation engine orchestrates network nodes through precise cycle counts, with each node implementing an RTOS-like preemptive task scheduler that maps configurable cycle counts to local ticks. Nodes maintain independent local time with configurable drift factors, enabling precise evaluation of TDMA protocols and time synchronization algorithms through reproducible network experiments. The platform includes real-time visualization via a React/Electron UI powered by a WebAssembly core.
 
-## Key Advantages
+### Core Design Principles
 
-### Implementation-Focused Design
+- **High-Performance Engine**
 
-- Cycle-accurate simulation engine with deterministic execution
-- Priority-based preemptive task scheduling per node
-- Configurable cycle-to-tick mapping for timing control
-- Interactive protocol visualization and analysis
+  - Deterministic cycle-accurate simulation core
+  - Compiled to WebAssembly for modern GUI integration
+  - Precise timing control and verification
+  - Memory-efficient task and message handling
+
+- **Real-Time Protocol Development**
+
+  - Priority-based preemptive task scheduling
+  - Trait-based protocol implementation framework
+  - Composable network stack components
+  - Built-in synchronization primitives
+  - Flexible message routing system
+
+- **Analysis and Verification**
+  - Real-time visualization and inspection
+  - Performance metrics collection
+  - Timing analysis and verification
+  - Resource usage monitoring
+  - Reproducible experiments
 
 ### Time Management
 

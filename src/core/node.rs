@@ -5,11 +5,14 @@ pub trait Node {
     fn get_id(&self) -> u16;
     fn get_cycle_offset(&self) -> u64;
     fn get_cycles_per_tick(&self) -> u64;
+    fn get_local_cycle(&self) -> u64;
     fn get_local_time(&self) -> f64;
     fn set_local_time(&mut self, local_time: f64);
     fn get_clock_drift_factor(&self) -> f64;
-    fn get_task_schedule_mut(&mut self) -> &mut Vec<u16>;
+    fn get_task_names(&self) -> HashMap<u16, String>;
     fn get_tasks_mut(&mut self) -> &mut HashMap<u16, Box<dyn Task>>;
+    fn get_task_schedule(&self) -> Vec<u16>;
+    fn get_task_schedule_mut(&mut self) -> &mut Vec<u16>;
     fn get_receive_queue_mut(&mut self) -> &mut VecDeque<Box<dyn Packet>>;
     fn get_send_queue_mut(&mut self) -> &mut Vec<Box<dyn Packet>>;
 
@@ -110,7 +113,7 @@ pub trait Node {
         }
 
         if let Some(task_id) = self
-            .get_task_schedule_mut()
+            .get_task_schedule()
             .get((local_cycle % cycles_per_tick) as usize)
             .cloned()
         {

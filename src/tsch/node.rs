@@ -6,6 +6,7 @@ pub struct TschNode {
     id: u16,
     cycles_per_tick: u64,
     cycle_offset: u64,
+    local_cycle: u64,
     local_time: f64,
     clock_drift_factor: f64,
     tasks: HashMap<u16, Box<dyn Task>>,
@@ -20,6 +21,7 @@ impl TschNode {
             id,
             cycles_per_tick,
             cycle_offset,
+            local_cycle: 0,
             local_time: 100.0,
             clock_drift_factor: 1.0,
             tasks: HashMap::new(),
@@ -46,6 +48,10 @@ impl Node for TschNode {
         self.cycles_per_tick
     }
 
+    fn get_local_cycle(&self) -> u64 {
+        self.local_cycle
+    }
+
     fn get_local_time(&self) -> f64 {
         self.local_time
     }
@@ -58,19 +64,30 @@ impl Node for TschNode {
         self.clock_drift_factor
     }
 
-    fn get_receive_queue_mut(&mut self) -> &mut VecDeque<Box<dyn Packet>> {
-        &mut self.receive_queue
+    fn get_task_names(&self) -> HashMap<u16, String> {
+        self.tasks
+            .iter()
+            .map(|(id, task)| (*id, task.get_name()))
+            .collect()
     }
 
-    fn get_send_queue_mut(&mut self) -> &mut Vec<Box<dyn Packet>> {
-        &mut self.send_queue
+    fn get_tasks_mut(&mut self) -> &mut HashMap<u16, Box<dyn Task>> {
+        &mut self.tasks
+    }
+
+    fn get_task_schedule(&self) -> Vec<u16> {
+        self.task_schedule.clone()
     }
 
     fn get_task_schedule_mut(&mut self) -> &mut Vec<u16> {
         &mut self.task_schedule
     }
 
-    fn get_tasks_mut(&mut self) -> &mut HashMap<u16, Box<dyn Task>> {
-        &mut self.tasks
+    fn get_receive_queue_mut(&mut self) -> &mut VecDeque<Box<dyn Packet>> {
+        &mut self.receive_queue
+    }
+
+    fn get_send_queue_mut(&mut self) -> &mut Vec<Box<dyn Packet>> {
+        &mut self.send_queue
     }
 }

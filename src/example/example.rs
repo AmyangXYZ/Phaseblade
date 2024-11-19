@@ -8,5 +8,8 @@ fn main() {
         engine.add_node(Box::new(tsch_node));
     }
 
-    engine.run(20);
+    engine.step();
+    println!("State: {:?}", engine.get_state());
+    engine.step();
+    println!("State: {:?}", engine.get_state());
 }
