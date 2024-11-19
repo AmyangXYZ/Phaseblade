@@ -1,15 +1,15 @@
 # Phaseblade
 
-A deterministic real-time network simulator built around a cycle-accurate time-triggered execution model. Each network node runs as an independent Rust thread with an RTOS-like preemptive task scheduler, mapping configurable cycle counts to local ticks and local time to simulate clock drift. Phaseblade enables precise evaluation of TDMA protocols and time synchronization algorithms through reproducible network experiments, with real-time visualization via a React/BabylonJS UI.
+A deterministic real-time network simulator built around a cycle-accurate time-triggered execution model. The simulation engine orchestrates network nodes through precise cycle counts, with each node implementing an RTOS-like preemptive task scheduler that maps configurable cycle counts to local ticks. Nodes maintain independent local time with configurable drift factors, enabling precise evaluation of TDMA protocols and time synchronization algorithms through reproducible network experiments. The platform includes real-time visualization via a React/Electron UI.
 
 ## Key Advantages
 
 ### Implementation-Focused Design
 
-- Cycle/Tick-accurate RTOS task scheduler for protocol stacks
-- Priority-based preemptive multitasking
-- Realistic timing and resource constraints
-- Interactive protocol demonstration and validation
+- Cycle-accurate simulation engine with deterministic execution
+- Priority-based preemptive task scheduling per node
+- Configurable cycle-to-tick mapping for timing control
+- Interactive protocol visualization and analysis
 
 ### Time Management
 
