@@ -35,7 +35,7 @@ impl Engine {
         }
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = getState)]
     pub fn get_state(&self) -> EngineState {
         let node_states: Vec<NodeState> = self
             .nodes
@@ -55,7 +55,7 @@ impl Engine {
         }
     }
 
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = addTschNode)]
     pub fn add_tsch_node(
         &mut self,
         id: u16,
@@ -105,9 +105,9 @@ impl Engine {
     }
 
     #[wasm_bindgen]
-    pub fn run(&mut self, total_cycles: u64) {
+    pub fn run(&mut self, cycles: u64) {
         let start = Instant::now();
-        while self.cycle < total_cycles {
+        while self.cycle < self.cycle + cycles {
             self.step();
         }
 
@@ -122,11 +122,53 @@ pub struct EngineState {
     node_states: Vec<NodeState>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[wasm_bindgen]
+impl EngineState {
+    #[wasm_bindgen(getter)]
+    pub fn cycle(&self) -> u64 {
+        self.cycle
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn node_states(&self) -> Vec<NodeState> {
+        self.node_states.clone()
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NodeState {
     id: u16,
     local_cycle: u64,
     local_time: f64,
     task_names: HashMap<u16, String>,
     task_schedule: Vec<u16>,
+}
+
+#[wasm_bindgen]
+impl NodeState {
+    #[wasm_bindgen(getter)]
+    pub fn id(&self) -> u16 {
+        self.id
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn local_cycle(&self) -> u64 {
+        self.local_cycle
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn local_time(&self) -> f64 {
+        self.local_time
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn task_names(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(&self.task_names).unwrap()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn task_schedule(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(&self.task_schedule).unwrap()
+    }
 }

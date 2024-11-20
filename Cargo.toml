@@ -5,10 +5,10 @@ edition = "2021"
 description = "A deterministic real-time network simulator with cycle-accurate RTOS-like task scheduling for protocol evaluation"
 keywords = ["network", "simulator", "rtos", "protocol-testing", "deterministic"]
 license = "GPL-3.0"
+repository = "https://github.com/AmyangXYZ/phaseblade"
 readme = "README.md"
 
 [dependencies]
-rand = "0.8.5" 
 wasm-bindgen = "0.2.95"
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"

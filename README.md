@@ -198,3 +198,9 @@ Network Research:
 - [ ] Protocol timing verification
 - [ ] Network condition simulation
 - [ ] Experiment reproducibility
+
+## Development
+
+Build the WebAssembly module:
+
+- `wasm-pack build --target web -d ui/phaseblade`
