@@ -2,7 +2,7 @@
 
 A deterministic real-time network simulator built around a cycle-accurate time-triggered execution model. The simulation engine orchestrates network nodes through precise cycle counts, with each node implementing an RTOS-like preemptive task scheduler that maps configurable cycle counts to local ticks. Nodes maintain independent local time with configurable drift factors, enabling precise evaluation of TDMA protocols and time synchronization algorithms through reproducible network experiments. The platform includes real-time visualization via a React/Electron UI powered by a WebAssembly core.
 
-### Core Design Principles
+## Core Design Principles
 
 - **High-Performance Engine**
 
@@ -53,7 +53,7 @@ A deterministic real-time network simulator built around a cycle-accurate time-t
   - Tasks can only access system time, not cycles or ticks
   - Starting point can be set to specific date/time
 
-#### RTOS-like API Design
+### RTOS-like API Design
 
 The core RTOS functionality is implemented through a set of composable traits:
 
