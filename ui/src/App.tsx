@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@mui/material"
 import init, { Engine, EngineState } from "phaseblade"
-
+import Card from "./components/Card"
 function App() {
   const pbEngineRef = useRef<Engine | null>(null)
   const initializingRef = useRef(false)
@@ -28,9 +28,10 @@ function App() {
           setEngineState(pbEngineRef.current?.getState())
         }}
       >
-        Step
+        <span>Step</span>
       </Button>
       {engineState && <div>Cycle: {engineState.cycle.toString()}</div>}
+      <Card header="Header" body="Body" footer="Footer" />
     </>
   )
 }

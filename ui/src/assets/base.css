@@ -1,5 +1,14 @@
+@font-face {
+  font-family: "FS Sinclair";
+  src: url("./FS Sinclair Regular.otf");
+}
+
+* {
+  font-family: "FS Sinclair", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "FS Sinclair", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 

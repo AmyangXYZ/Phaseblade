@@ -1,0 +1,35 @@
+.card-outline {
+  border: 1px solid yellow;
+  padding: 8px;
+}
+
+.card {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 1rem;
+}
+
+.card-header-divider {
+  height: 16px;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.08) 2px,
+    rgba(255, 255, 255, 0.08) 6px,
+    transparent 6px,
+    transparent 8px
+  );
+}
+
+.card-footer-divider {
+  height: 4px;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.08) 2px,
+    rgba(255, 255, 255, 0.08) 6px,
+    transparent 6px,
+    transparent 8px
+  );
+}
