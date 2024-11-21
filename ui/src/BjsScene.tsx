@@ -30,10 +30,9 @@ function BjsScene() {
     // Draw concentric circles
     ctx.strokeStyle = "#ccf0fd"
     ctx.lineWidth = 4
-    const numberOfCircles = 4
+    const numberOfCircles = 3
     const centerX = textureSize / 2
     const centerY = textureSize / 2
-    const minRadius = (textureSize / 2) * 0.1
     const maxRadius = (textureSize / 2) * 0.9 // 95% of half size
 
     ctx.beginPath()
@@ -41,9 +40,9 @@ function BjsScene() {
     ctx.stroke()
 
     for (let i = 1; i <= numberOfCircles; i++) {
-      const radius = ((maxRadius - minRadius) / numberOfCircles) * i + minRadius
+      const radius = (maxRadius / numberOfCircles) * i
       ctx.beginPath()
-      ctx.lineWidth = 3 + i
+      ctx.lineWidth = 4 + i * 2
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
       ctx.stroke()
     }
