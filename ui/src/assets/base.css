@@ -1,6 +1,13 @@
 @font-face {
   font-family: "FS Sinclair";
   src: url("./FS Sinclair Regular.otf");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "FS Sinclair";
+  src: url("./FS Sinclair Bold.otf");
+  font-weight: 600;
 }
 
 * {

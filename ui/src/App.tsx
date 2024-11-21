@@ -1,37 +1,36 @@
-import { useEffect, useRef, useState } from "react"
-import { Button } from "@mui/material"
-import init, { Engine, EngineState } from "phaseblade"
 import Card from "./components/Card"
+import { Upload } from "@mui/icons-material"
+import PbEngine from "./PbEngine"
+import BjsScene from "./BjsScene"
 function App() {
-  const pbEngineRef = useRef<Engine | null>(null)
-  const initializingRef = useRef(false)
-  const [engineState, setEngineState] = useState<EngineState>()
-
-  useEffect(() => {
-    if (pbEngineRef.current || initializingRef.current) return
-    initializingRef.current = true
-
-    init().then(() => {
-      const engine = new Engine(100n, 100n)
-      pbEngineRef.current = engine
-      engine.addTschNode(0, 10n, 0n, 1000n)
-      const state = engine.getState()
-      setEngineState(state)
-    })
-  }, [])
   return (
     <>
-      <div>Phaseblade Engine </div>
-      <Button
-        onClick={() => {
-          pbEngineRef.current?.step()
-          setEngineState(pbEngineRef.current?.getState())
-        }}
-      >
-        <span>Step</span>
-      </Button>
-      {engineState && <div>Cycle: {engineState.cycle.toString()}</div>}
-      <Card header="Header" body="Body" footer="Footer" />
+      <PbEngine />
+      <BjsScene />
+      <div style={{ position: "absolute", zIndex: 2 }}>
+        <Card
+          title="Mission"
+          icon={<Upload sx={{ color: "black" }} />}
+          subtitle="RETRIEVE VALUABLE DATA"
+          body={<div>Retrieve and transmit the vital research data.</div>}
+          footer="SELECT MISSION"
+          width="420px"
+        />
+
+        <Card
+          title="Header"
+          subtitle="Subtitle"
+          body={
+            <div>
+              Body <br />
+              body
+            </div>
+          }
+          width="200px"
+          // height="200px"
+        />
+        <Card body={<div>Body </div>} width="200px" outlineColor="red" />
+      </div>
     </>
   )
 }

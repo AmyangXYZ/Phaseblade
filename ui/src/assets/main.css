@@ -4,5 +4,20 @@
   max-width: 100vw;
   max-height: 100vh;
   margin: 0 auto;
-  padding: 0rem;
+  padding: 1rem;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  z-index: 1;
 }
