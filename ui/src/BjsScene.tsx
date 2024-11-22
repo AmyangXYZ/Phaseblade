@@ -168,11 +168,11 @@ function BjsScene() {
           }
         })
       )
-      let time = 0
-      let randomOffset = {
-        x: Math.random() * 0.2 - 0.1,
-        z: Math.random() * 0.2 - 0.1,
-      }
+      // let  = 0
+      // let randomOffset = {
+      //   x: Math.random() * 0.2 - 0.1,
+      //   z: Mtimeath.random() * 0.2 - 0.1,
+      // }
 
       // if (type !== "database") {
       //   scene.registerBeforeRender(() => {
