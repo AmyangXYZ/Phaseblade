@@ -180,27 +180,44 @@ function BjsScene() {
       }
 
       if (type !== "database") {
-        scene.registerBeforeRender(() => {
-          time += 0.002
+        let lastTime = performance.now()
+        const targetDelta = 1000 / 60 // 60fps in ms
+        let accumulator = 0
 
-          // Calculate new position
-          const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
-          const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
+        const animate = (currentTime: number) => {
+          const deltaTime = currentTime - lastTime
+          accumulator += deltaTime
 
-          // Check boundaries (groundRadius - 1 to keep some margin)
-          const maxRadius = 25
-          const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
+          // Update position only when enough time has accumulated
+          while (accumulator >= targetDelta) {
+            time += 0.002
 
-          if (distanceFromCenter < maxRadius) {
-            node.position.x = newX
-            node.position.z = newZ
-          } else {
-            randomOffset = {
-              x: Math.random() * 0.2 - 0.1,
-              z: Math.random() * 0.2 - 0.1,
+            // Calculate new position
+            const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
+            const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
+
+            // Check boundaries
+            const maxRadius = 25
+            const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
+
+            if (distanceFromCenter < maxRadius) {
+              node.position.x = newX
+              node.position.z = newZ
+            } else {
+              randomOffset = {
+                x: Math.random() * 0.2 - 0.1,
+                z: Math.random() * 0.2 - 0.1,
+              }
             }
+
+            accumulator -= targetDelta
           }
-        })
+
+          lastTime = currentTime
+          requestAnimationFrame(animate)
+        }
+
+        requestAnimationFrame(animate)
       }
     }
 
@@ -413,6 +430,32 @@ const createHexagon = (
   selectionRing.parent = hexagon
   selectionRing.renderingGroupId = 1
 
+  let selectionTime = 0
+  const animateSelectionRing = () => {
+    let lastTime = performance.now()
+    const targetDelta = 1000 / 60 // 60fps in ms
+    let accumulator = 0
+
+    const animate = (currentTime: number) => {
+      const deltaTime = currentTime - lastTime
+      accumulator += deltaTime
+
+      // Update position only when enough time has accumulated
+      while (accumulator >= targetDelta) {
+        selectionTime += 0.002
+        selectionRing.rotation.y = Math.PI * 2 * (selectionTime % 1)
+
+        accumulator -= targetDelta
+      }
+
+      lastTime = currentTime
+      requestAnimationFrame(animate)
+    }
+
+    requestAnimationFrame(animate)
+  }
+  animateSelectionRing()
+
   hexagon.showSelection = () => {
     selectionTime = 0
     selectionRing.setEnabled(true)
@@ -420,12 +463,6 @@ const createHexagon = (
   hexagon.hideSelection = () => selectionRing.setEnabled(false)
   hexagon.toggleSelection = () => selectionRing.setEnabled(!selectionRing.isEnabled())
   hexagon.hideSelection()
-
-  let selectionTime = 0
-  scene.registerBeforeRender(() => {
-    selectionTime += 0.002
-    selectionRing.rotation.y = Math.PI * 2 * (selectionTime % 1)
-  })
 
   const signalRipple = MeshBuilder.CreateDisc(
     `${name}-SignalRipple`,
@@ -442,6 +479,34 @@ const createHexagon = (
   signalRipple.parent = hexagon
   signalRipple.renderingGroupId = 1
 
+  let rippleTime = 0
+  const animateSignalRipple = () => {
+    let lastTime = performance.now()
+    const targetDelta = 1000 / 60 // 60fps in ms
+    let accumulator = 0
+
+    const animate = (currentTime: number) => {
+      const deltaTime = currentTime - lastTime
+      accumulator += deltaTime
+
+      // Update position only when enough time has accumulated
+      while (accumulator >= targetDelta) {
+        rippleTime += 0.02
+        const scale = 2 * (rippleTime % 1)
+        signalRipple.scaling.x = scale
+        signalRipple.scaling.z = scale
+        signalRipple.scaling.y = scale
+
+        accumulator -= targetDelta
+      }
+
+      lastTime = currentTime
+      requestAnimationFrame(animate)
+    }
+
+    requestAnimationFrame(animate)
+  }
+  animateSignalRipple()
   hexagon.showSignalRipple = () => {
     signalRipple.setEnabled(true)
     rippleTime = 0
@@ -450,15 +515,6 @@ const createHexagon = (
   hexagon.toggleSignalRipple = () => signalRipple.setEnabled(!signalRipple.isEnabled())
 
   hexagon.hideSignalRipple()
-
-  let rippleTime = 0
-  scene.registerBeforeRender(() => {
-    rippleTime += 0.02
-    const scale = 2 * (rippleTime % 1)
-    signalRipple.scaling.x = scale
-    signalRipple.scaling.z = scale
-    signalRipple.scaling.y = scale
-  })
 
   hexagon.renderingGroupId = 1
 
@@ -595,19 +651,37 @@ const createTriangleMarker = (
   triangle.material = triangleMaterial
 
   // Animation
+  let lastTime = performance.now()
+  const targetDelta = 1000 / 60 // 60fps in ms
+  let accumulator = 0
   let time = 0
-  scene.registerBeforeRender(() => {
-    time += 0.03
-    if (direction === "right") {
-      triangle.position.x = position.x + Math.sin(time) * moveDistance
-    } else if (direction === "left") {
-      triangle.position.x = position.x - Math.sin(time) * moveDistance
-    } else if (direction === "up") {
-      triangle.position.z = position.z + Math.sin(time) * moveDistance
-    } else if (direction === "down") {
-      triangle.position.z = position.z - Math.sin(time) * moveDistance
+
+  const animate = (currentTime: number) => {
+    const deltaTime = currentTime - lastTime
+    accumulator += deltaTime
+
+    // Update position only when enough time has accumulated
+    while (accumulator >= targetDelta) {
+      time += 0.03
+
+      if (direction === "right") {
+        triangle.position.x = position.x + Math.sin(time) * moveDistance
+      } else if (direction === "left") {
+        triangle.position.x = position.x - Math.sin(time) * moveDistance
+      } else if (direction === "up") {
+        triangle.position.z = position.z + Math.sin(time) * moveDistance
+      } else if (direction === "down") {
+        triangle.position.z = position.z - Math.sin(time) * moveDistance
+      }
+
+      accumulator -= targetDelta
     }
-  })
+
+    lastTime = currentTime
+    requestAnimationFrame(animate)
+  }
+
+  requestAnimationFrame(animate)
 }
 
 export default BjsScene
