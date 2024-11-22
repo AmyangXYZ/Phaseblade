@@ -168,35 +168,40 @@ function BjsScene() {
           }
         })
       )
-      // let  = 0
-      // let randomOffset = {
-      //   x: Math.random() * 0.2 - 0.1,
-      //   z: Mtimeath.random() * 0.2 - 0.1,
-      // }
 
-      // if (type !== "database") {
-      //   scene.registerBeforeRender(() => {
-      //     time += 0.002
+      if (Math.random() < 0.3) {
+        node.showSignalRipple()
+      }
 
-      //     // Calculate new position
-      //     const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
-      //     const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
+      let time = 0
+      let randomOffset = {
+        x: Math.random() * 0.2 - 0.1,
+        z: Math.random() * 0.2 - 0.1,
+      }
 
-      //     // Check boundaries (groundRadius - 1 to keep some margin)
-      //     const maxRadius = 25
-      //     const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
+      if (type !== "database") {
+        scene.registerBeforeRender(() => {
+          time += 0.002
 
-      //     if (distanceFromCenter < maxRadius) {
-      //       node.position.x = newX
-      //       node.position.z = newZ
-      //     } else {
-      //       randomOffset = {
-      //         x: Math.random() * 0.2 - 0.1,
-      //         z: Math.random() * 0.2 - 0.1,
-      //       }
-      //     }
-      //   })
-      // }
+          // Calculate new position
+          const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
+          const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
+
+          // Check boundaries (groundRadius - 1 to keep some margin)
+          const maxRadius = 25
+          const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
+
+          if (distanceFromCenter < maxRadius) {
+            node.position.x = newX
+            node.position.z = newZ
+          } else {
+            randomOffset = {
+              x: Math.random() * 0.2 - 0.1,
+              z: Math.random() * 0.2 - 0.1,
+            }
+          }
+        })
+      }
     }
 
     createTriangleMarker(new Vector3(-groundRadius, 0.1, 0), Math.PI / 2, 0.7, "right", 2, scene)
@@ -408,10 +413,19 @@ const createHexagon = (
   selectionRing.parent = hexagon
   selectionRing.renderingGroupId = 1
 
-  hexagon.showSelection = () => selectionRing.setEnabled(true)
+  hexagon.showSelection = () => {
+    selectionTime = 0
+    selectionRing.setEnabled(true)
+  }
   hexagon.hideSelection = () => selectionRing.setEnabled(false)
   hexagon.toggleSelection = () => selectionRing.setEnabled(!selectionRing.isEnabled())
   hexagon.hideSelection()
+
+  let selectionTime = 0
+  scene.registerBeforeRender(() => {
+    selectionTime += 0.002
+    selectionRing.rotation.y = Math.PI * 2 * (selectionTime % 1)
+  })
 
   const signalRipple = MeshBuilder.CreateDisc(
     `${name}-SignalRipple`,
@@ -430,17 +444,17 @@ const createHexagon = (
 
   hexagon.showSignalRipple = () => {
     signalRipple.setEnabled(true)
-    time = 0
+    rippleTime = 0
   }
   hexagon.hideSignalRipple = () => signalRipple.setEnabled(false)
   hexagon.toggleSignalRipple = () => signalRipple.setEnabled(!signalRipple.isEnabled())
 
   hexagon.hideSignalRipple()
 
-  let time = 0
+  let rippleTime = 0
   scene.registerBeforeRender(() => {
-    time += 0.02
-    const scale = 2 * (time % 1)
+    rippleTime += 0.02
+    const scale = 2 * (rippleTime % 1)
     signalRipple.scaling.x = scale
     signalRipple.scaling.z = scale
     signalRipple.scaling.y = scale
