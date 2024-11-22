@@ -17,10 +17,11 @@ import {
   ActionManager,
   ExecuteCodeAction,
 } from "@babylonjs/core"
-import { useEffect, useRef } from "react"
-
+import { useEffect, useRef, useState } from "react"
+import Card from "./components/Card"
 import TruckIcon from "./assets/truck.svg"
 import DroneIcon from "./assets/drone.svg"
+import DatabaseIcon from "./assets/database.svg"
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
 
 declare module "@babylonjs/core/Meshes/mesh" {
@@ -39,10 +40,55 @@ declare module "@babylonjs/core/Meshes/abstractMesh" {
   }
 }
 
+ArcRotateCamera.prototype.spinTo = function (
+  this: ArcRotateCamera,
+  targetPosition: Vector3,
+  targetTarget: Vector3 = new Vector3(0, 12, 0),
+  duration: number = 1000
+): void {
+  const startPosition = this.position.clone()
+  const startTarget = this.target.clone()
+  const startTime = performance.now()
+
+  const smoothStep = (x: number): number => {
+    return x * x * (3 - 2 * x)
+  }
+
+  const animate = (currentTime: number) => {
+    const elapsedTime = currentTime - startTime
+    const progress = Math.min(elapsedTime / duration, 1)
+
+    const easedProgress = smoothStep(progress)
+
+    const newPosition = Vector3.Lerp(startPosition, targetPosition, easedProgress)
+    const newTarget = Vector3.Lerp(startTarget, targetTarget, easedProgress)
+
+    this.position = newPosition
+    this.setTarget(newTarget)
+
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    }
+  }
+
+  requestAnimationFrame(animate)
+}
+
+declare module "@babylonjs/core/Cameras/arcRotateCamera" {
+  interface ArcRotateCamera {
+    spinTo(targetPosition: Vector3, targetTarget?: Vector3, duration?: number): void
+  }
+}
+
+const icons: Record<string, string> = { truck: TruckIcon, drone: DroneIcon, database: DatabaseIcon }
+
 function BjsScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bjsEngineRef = useRef<Engine | null>(null)
   const shadowGeneratorRef = useRef<ShadowGenerator | null>(null)
+  const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const selectedNodeRef = useRef<string | null>(null)
+
   useEffect(() => {
     if (!canvasRef.current || bjsEngineRef.current) return
     const engine = new Engine(canvasRef.current, true, {}, true)
@@ -53,7 +99,7 @@ function BjsScene() {
     const camera = new ArcRotateCamera("ArcRotateCamera", 0, 0, 45, new Vector3(0, 0, 0), scene)
     camera.setPosition(new Vector3(0, 45, -22))
     camera.attachControl(canvasRef.current, false)
-    camera.inertia = 0.8
+    camera.inertia = 0.9
     camera.speed = 10
     camera.lowerAlphaLimit = camera.alpha
     camera.upperAlphaLimit = camera.alpha
@@ -81,15 +127,15 @@ function BjsScene() {
     ground.receiveShadows = true
 
     for (let i = 0; i < 10; i++) {
-      const node = createHexagon(`node-${i}`, scene, {
-        svg: [TruckIcon, DroneIcon][i % 2],
+      const type = Object.keys(icons)[Math.floor(Math.random() * Object.keys(icons).length)]
+      const node = createHexagon(`${type}-${i}`, scene, {
+        svg: icons[type],
         position: new Vector3(Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20),
-        diameter: 1.8,
+        diameter: 2,
       })
 
       shadowGeneratorRef.current?.addShadowCaster(node)
 
-      // Add click listener
       node.actionManager = new ActionManager(scene)
       node.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
@@ -98,10 +144,28 @@ function BjsScene() {
               mesh.hideSelection()
             }
           })
-          console.log("toggleSelection", node.name)
-          node.toggleSelection()
+          node.showSelection()
+
+          if (selectedNodeRef.current !== node.name) {
+            camera.spinTo(node.position.clone().add(new Vector3(0, 24, -12)), node.position.clone(), 500)
+            setSelectedNode(node.name)
+          } else {
+            node.hideSelection()
+            setSelectedNode(null)
+          }
         })
       )
+    }
+
+    scene.onPointerDown = (e) => {
+      if (e.button === 0 || e.button === 2) {
+        setSelectedNode(null)
+        scene.meshes.forEach((mesh) => {
+          if (mesh.hideSelection) {
+            mesh.hideSelection()
+          }
+        })
+      }
     }
 
     engine.runRenderLoop(() => {
@@ -110,7 +174,32 @@ function BjsScene() {
     })
   }, [])
 
-  return <canvas ref={canvasRef} className="scene"></canvas>
+  useEffect(() => {
+    selectedNodeRef.current = selectedNode
+  }, [selectedNode])
+
+  return (
+    <>
+      <canvas ref={canvasRef} className="scene"></canvas>
+      {selectedNode && (
+        <Card
+          title={`Mission - ${selectedNode}`}
+          icon={<img src={icons[selectedNode.split("-")[0]]} />}
+          subtitle="RETRIEVE VALUABLE DATA"
+          body={<div>Retrieve and transmit the vital research data.</div>}
+          footer="SELECT MISSION"
+          width="420px"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "calc(50% + 100px)",
+            transform: "translateY(-50%)",
+            zIndex: 10,
+          }}
+        />
+      )}
+    </>
+  )
 }
 
 const createRadarMaterial = (scene: Scene) => {
@@ -121,7 +210,7 @@ const createRadarMaterial = (scene: Scene) => {
   const texture = new DynamicTexture("radarTexture", textureSize, scene, true)
   const ctx = texture.getContext()
 
-  ctx.fillStyle = "#1f111f"
+  ctx.fillStyle = "#201122"
   ctx.fillRect(0, 0, textureSize, textureSize)
 
   ctx.strokeStyle = "#ccf0fd"
@@ -245,7 +334,6 @@ const createHexagon = (
       const scale = Math.min(maxSize / img.width, maxSize / img.height)
       const x = (400 - img.width * scale) / 2
       const y = (400 - img.height * scale) / 2
-
       // Draw the scaled image
       ctx.drawImage(img, x, y, img.width * scale, img.height * scale)
 

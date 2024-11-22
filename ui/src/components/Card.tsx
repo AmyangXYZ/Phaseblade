@@ -8,6 +8,7 @@ function Card({
   footer,
   width,
   outlineColor,
+  style,
 }: {
   title?: string
   subtitle?: string
@@ -16,9 +17,10 @@ function Card({
   footer?: string
   width?: string
   outlineColor?: string
+  style?: React.CSSProperties
 }) {
   return (
-    <div className="card-outline" style={{ width, borderColor: outlineColor }}>
+    <div className="card-outline" style={{ width, borderColor: outlineColor, ...style }}>
       <div className="card">
         {title && (
           <>
