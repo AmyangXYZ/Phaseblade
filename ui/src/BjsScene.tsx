@@ -16,6 +16,8 @@ import {
   MultiMaterial,
   ActionManager,
   ExecuteCodeAction,
+  Mesh,
+  VertexData,
 } from "@babylonjs/core"
 import { useEffect, useRef, useState } from "react"
 import Card from "./components/Card"
@@ -29,6 +31,9 @@ declare module "@babylonjs/core/Meshes/mesh" {
     showSelection(): void
     hideSelection(): void
     toggleSelection(): void
+    showSignalRipple(): void
+    hideSignalRipple(): void
+    toggleSignalRipple(): void
   }
 }
 
@@ -37,6 +42,9 @@ declare module "@babylonjs/core/Meshes/abstractMesh" {
     showSelection(): void
     hideSelection(): void
     toggleSelection(): void
+    showSignalRipple(): void
+    hideSignalRipple(): void
+    toggleSignalRipple(): void
   }
 }
 
@@ -121,7 +129,12 @@ function BjsScene() {
     shadowGeneratorRef.current.frustumEdgeFalloff = 0.1
     shadowGeneratorRef.current.transparencyShadow = true
 
-    const ground = MeshBuilder.CreateDisc("ground", { radius: 30, updatable: false, tessellation: 1024 }, scene)
+    const groundRadius = 30
+    const ground = MeshBuilder.CreateDisc(
+      "ground",
+      { radius: groundRadius, updatable: false, tessellation: 1024 },
+      scene
+    )
     ground.rotation.x = Math.PI / 2
     ground.material = createRadarMaterial(scene)
     ground.receiveShadows = true
@@ -155,7 +168,41 @@ function BjsScene() {
           }
         })
       )
+      let time = 0
+      let randomOffset = {
+        x: Math.random() * 0.2 - 0.1,
+        z: Math.random() * 0.2 - 0.1,
+      }
+
+      if (type !== "database") {
+        scene.registerBeforeRender(() => {
+          time += 0.002
+
+          // Calculate new position
+          const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
+          const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
+
+          // Check boundaries (groundRadius - 1 to keep some margin)
+          const maxRadius = 25
+          const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
+
+          if (distanceFromCenter < maxRadius) {
+            node.position.x = newX
+            node.position.z = newZ
+          } else {
+            randomOffset = {
+              x: Math.random() * 0.2 - 0.1,
+              z: Math.random() * 0.2 - 0.1,
+            }
+          }
+        })
+      }
     }
+
+    createTriangleMarker(new Vector3(-groundRadius, 0.1, 0), Math.PI / 2, 0.7, "right", 2, scene)
+    createTriangleMarker(new Vector3(groundRadius, 0.1, 0), -Math.PI / 2, 0.7, "left", 2, scene)
+    createTriangleMarker(new Vector3(0, 0.1, -groundRadius), 0, 0.7, "up", 2, scene)
+    createTriangleMarker(new Vector3(0, 0.1, groundRadius), Math.PI, 0.7, "down", 2, scene)
 
     scene.onPointerDown = (e) => {
       if (e.button === 0 || e.button === 2) {
@@ -210,7 +257,7 @@ const createRadarMaterial = (scene: Scene) => {
   const texture = new DynamicTexture("radarTexture", textureSize, scene, true)
   const ctx = texture.getContext()
 
-  ctx.fillStyle = "#201122"
+  ctx.fillStyle = "#10111f"
   ctx.fillRect(0, 0, textureSize, textureSize)
 
   ctx.strokeStyle = "#ccf0fd"
@@ -250,35 +297,12 @@ const createRadarMaterial = (scene: Scene) => {
   ctx.stroke()
   ctx.setLineDash([])
 
-  const markerWidth = 60
-  const markerHeight = 60
-
-  const drawTriangle = (x: number, y: number, rotation: number) => {
-    ctx.save()
-    ctx.translate(x, y)
-    ctx.rotate(rotation)
-
-    ctx.fillStyle = "cyan"
-    ctx.beginPath()
-    ctx.moveTo(-markerWidth / 2, 0)
-    ctx.lineTo(markerWidth / 2, 0)
-    ctx.lineTo(0, markerHeight) // Changed to point inward
-    ctx.closePath()
-    ctx.fill()
-    ctx.restore()
-  }
-
-  drawTriangle(centerX, centerY - outerRadius - 20, 0)
-  drawTriangle(centerX + outerRadius + 20, centerY, Math.PI / 2)
-  drawTriangle(centerX, centerY + outerRadius + 20, Math.PI)
-  drawTriangle(centerX - outerRadius - 20, centerY, -Math.PI / 2)
-
   texture.hasAlpha = true
   texture.update()
 
   material.diffuseTexture = texture
   material.useAlphaFromDiffuseTexture = true
-  material.emissiveColor = new Color3(0, 0, 0)
+  material.emissiveColor = new Color3(0, 0.5, 0.5)
   material.specularColor = new Color3(0, 0, 0)
   material.ambientColor = new Color3(1, 1, 1)
 
@@ -371,7 +395,7 @@ const createHexagon = (
   hexagon.rotation.y = -Math.PI / 2
 
   const selectionRing = MeshBuilder.CreateDisc(
-    `${name}SelectionRing`,
+    `${name}-SelectionRing`,
     {
       radius: diameter! * 0.83,
       tessellation: 64,
@@ -387,8 +411,40 @@ const createHexagon = (
   hexagon.showSelection = () => selectionRing.setEnabled(true)
   hexagon.hideSelection = () => selectionRing.setEnabled(false)
   hexagon.toggleSelection = () => selectionRing.setEnabled(!selectionRing.isEnabled())
-  hexagon.renderingGroupId = 1
   hexagon.hideSelection()
+
+  const signalRipple = MeshBuilder.CreateDisc(
+    `${name}-SignalRipple`,
+    {
+      radius: diameter! * 0.83,
+      tessellation: 64,
+    },
+    scene
+  )
+
+  signalRipple.material = createSelectionRingTexture(scene)
+  signalRipple.position.y = 0.01 - hexagon.position.y
+  signalRipple.rotation.x = Math.PI / 2
+  signalRipple.parent = hexagon
+  signalRipple.renderingGroupId = 1
+
+  hexagon.showSignalRipple = () => signalRipple.setEnabled(true)
+  hexagon.hideSignalRipple = () => signalRipple.setEnabled(false)
+  hexagon.toggleSignalRipple = () => signalRipple.setEnabled(!signalRipple.isEnabled())
+
+  hexagon.hideSignalRipple()
+
+  let time = 0
+  scene.registerBeforeRender(() => {
+    time += 0.02
+    const scale = 3 * (time % 1)
+    signalRipple.scaling.x = scale
+    signalRipple.scaling.z = scale
+    signalRipple.scaling.y = scale
+  })
+
+  hexagon.renderingGroupId = 1
+
   return hexagon
 }
 
@@ -431,9 +487,60 @@ const createSelectionRingTexture = (scene: Scene): StandardMaterial => {
   ringTexture.update()
   material.diffuseTexture = ringTexture
   material.useAlphaFromDiffuseTexture = true
-  // material.backFaceCulling = false
 
   return material
+}
+
+const createTriangleMarker = (
+  position: Vector3,
+  rotation: number,
+  diameter: number,
+  direction: "right" | "left" | "up" | "down",
+  moveDistance: number,
+  scene: Scene
+) => {
+  const triangle = new Mesh("triangle", scene)
+  const positions = [
+    -0.75 * diameter,
+    0,
+    0, // vertex 1
+    0.75 * diameter,
+    0,
+    0, // vertex 2
+    0,
+    diameter,
+    0, // vertex 3
+  ]
+  const indices = [0, 1, 2]
+
+  const vertexData = new VertexData()
+  vertexData.positions = positions
+  vertexData.indices = indices
+  vertexData.applyToMesh(triangle, true)
+
+  triangle.position = position.clone()
+  triangle.rotation.x = Math.PI / 2
+  triangle.rotation.y = rotation
+
+  const triangleMaterial = new StandardMaterial("triangleMaterial", scene)
+  triangleMaterial.diffuseColor = new Color3(0.35, 0.76, 0.83)
+  triangleMaterial.emissiveColor = new Color3(0, 0.5, 0.5)
+  triangle.material = triangleMaterial
+
+  // Animation
+  let time = 0
+  scene.registerBeforeRender(() => {
+    time += 0.03
+    if (direction === "right") {
+      triangle.position.x = position.x + Math.sin(time) * moveDistance
+    } else if (direction === "left") {
+      triangle.position.x = position.x - Math.sin(time) * moveDistance
+    } else if (direction === "up") {
+      triangle.position.z = position.z + Math.sin(time) * moveDistance
+    } else if (direction === "down") {
+      triangle.position.z = position.z - Math.sin(time) * moveDistance
+    }
+  })
 }
 
 export default BjsScene
