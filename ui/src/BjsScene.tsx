@@ -174,29 +174,29 @@ function BjsScene() {
         z: Math.random() * 0.2 - 0.1,
       }
 
-      if (type !== "database") {
-        scene.registerBeforeRender(() => {
-          time += 0.002
+      // if (type !== "database") {
+      //   scene.registerBeforeRender(() => {
+      //     time += 0.002
 
-          // Calculate new position
-          const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
-          const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
+      //     // Calculate new position
+      //     const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
+      //     const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
 
-          // Check boundaries (groundRadius - 1 to keep some margin)
-          const maxRadius = 25
-          const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
+      //     // Check boundaries (groundRadius - 1 to keep some margin)
+      //     const maxRadius = 25
+      //     const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
 
-          if (distanceFromCenter < maxRadius) {
-            node.position.x = newX
-            node.position.z = newZ
-          } else {
-            randomOffset = {
-              x: Math.random() * 0.2 - 0.1,
-              z: Math.random() * 0.2 - 0.1,
-            }
-          }
-        })
-      }
+      //     if (distanceFromCenter < maxRadius) {
+      //       node.position.x = newX
+      //       node.position.z = newZ
+      //     } else {
+      //       randomOffset = {
+      //         x: Math.random() * 0.2 - 0.1,
+      //         z: Math.random() * 0.2 - 0.1,
+      //       }
+      //     }
+      //   })
+      // }
     }
 
     createTriangleMarker(new Vector3(-groundRadius, 0.1, 0), Math.PI / 2, 0.7, "right", 2, scene)
@@ -422,13 +422,16 @@ const createHexagon = (
     scene
   )
 
-  signalRipple.material = createSelectionRingTexture(scene)
-  signalRipple.position.y = 0.01 - hexagon.position.y
+  signalRipple.material = createSignalRippleTexture(scene)
+  signalRipple.position.y = 0.02 - hexagon.position.y
   signalRipple.rotation.x = Math.PI / 2
   signalRipple.parent = hexagon
   signalRipple.renderingGroupId = 1
 
-  hexagon.showSignalRipple = () => signalRipple.setEnabled(true)
+  hexagon.showSignalRipple = () => {
+    signalRipple.setEnabled(true)
+    time = 0
+  }
   hexagon.hideSignalRipple = () => signalRipple.setEnabled(false)
   hexagon.toggleSignalRipple = () => signalRipple.setEnabled(!signalRipple.isEnabled())
 
@@ -437,7 +440,7 @@ const createHexagon = (
   let time = 0
   scene.registerBeforeRender(() => {
     time += 0.02
-    const scale = 3 * (time % 1)
+    const scale = 2 * (time % 1)
     signalRipple.scaling.x = scale
     signalRipple.scaling.z = scale
     signalRipple.scaling.y = scale
@@ -486,6 +489,56 @@ const createSelectionRingTexture = (scene: Scene): StandardMaterial => {
   ringTexture.hasAlpha = true
   ringTexture.update()
   material.diffuseTexture = ringTexture
+  material.useAlphaFromDiffuseTexture = true
+
+  return material
+}
+
+const createSignalRippleTexture = (scene: Scene): StandardMaterial => {
+  const material = new StandardMaterial("signalRippleMaterial", scene)
+  const textureSize = 512
+  const texture = new DynamicTexture("signalRippleTexture", textureSize, scene, true)
+  const context = texture.getContext()
+
+  const centerX = textureSize / 2
+  const centerY = textureSize / 2
+  const ringWidth = 75
+  const radius = textureSize / 2 - ringWidth / 2
+
+  // Clear background
+  context.fillStyle = "transparent"
+  context.clearRect(0, 0, textureSize, textureSize)
+
+  // Create radial gradient for the glowing effect
+  const gradient = context.createRadialGradient(
+    centerX,
+    centerY,
+    radius + ringWidth / 4, // Start from outer edge
+    centerX,
+    centerY,
+    radius - ringWidth / 2 // End inside the ring
+  )
+
+  gradient.addColorStop(0, "rgba(255, 69, 0, 1)")
+  gradient.addColorStop(0.2, "rgba(255, 69, 0, 0.8)")
+  gradient.addColorStop(0.4, "rgba(255, 69, 0, 0.6)")
+  gradient.addColorStop(0.6, "rgba(255, 69, 0, 0.4)")
+  gradient.addColorStop(0.8, "rgba(255, 69, 0, 0.2)")
+  gradient.addColorStop(1, "rgba(255, 69, 0, 0)")
+
+  context.strokeStyle = gradient
+  context.lineWidth = ringWidth
+  context.beginPath()
+  context.arc(centerX, centerY, radius, 0, Math.PI * 2)
+  context.stroke()
+
+  texture.hasAlpha = true
+  texture.update()
+
+  // Material settings for glow effect
+  material.diffuseTexture = texture
+  material.emissiveColor = new Color3(1, 0.27, 0)
+  material.specularColor = new Color3(0, 0, 0)
   material.useAlphaFromDiffuseTexture = true
 
   return material
