@@ -150,6 +150,12 @@ function BjsScene() {
       node.actionManager = new ActionManager(scene)
       node.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
+          if (selectedNodeRef.current === node.name) {
+            node.hideSelection()
+            setSelectedNode(null)
+            return
+          }
+
           scene.meshes.forEach((mesh) => {
             if (mesh.hideSelection && mesh !== node) {
               mesh.hideSelection()
@@ -160,9 +166,6 @@ function BjsScene() {
           if (selectedNodeRef.current !== node.name) {
             camera.spinTo(node.position.clone().add(new Vector3(0, 24, -12)), node.position.clone(), 500)
             setSelectedNode(node.name)
-          } else {
-            node.hideSelection()
-            setSelectedNode(null)
           }
         })
       )
@@ -179,7 +182,7 @@ function BjsScene() {
 
       if (type !== "database") {
         let lastTime = performance.now()
-        const targetDelta = 1000 / 60 // 60fps in ms
+        const targetDelta = 1000 / 60
         let accumulator = 0
 
         const animate = (currentTime: number) => {
@@ -221,6 +224,13 @@ function BjsScene() {
 
     scene.onPointerDown = (e) => {
       if (e.button === 0 || e.button === 2) {
+        const pickResult = scene.pick(scene.pointerX, scene.pointerY)
+        if (pickResult.hit && pickResult.pickedMesh) {
+          if (pickResult.pickedMesh.name.includes("-") && !pickResult.pickedMesh.name.startsWith("section_")) {
+            return
+          }
+        }
+
         setSelectedNode(null)
         scene.meshes.forEach((mesh) => {
           if (mesh.hideSelection) {
@@ -238,6 +248,7 @@ function BjsScene() {
 
   useEffect(() => {
     selectedNodeRef.current = selectedNode
+    console.log("selectedNode", selectedNodeRef.current)
   }, [selectedNode])
 
   return (
@@ -618,9 +629,9 @@ const createHexagon = (
   hexagon.material = multiMaterial
   hexagon.subMeshes = []
   hexagon.subMeshes.push(
-    new SubMesh(0, 0, 36, 0, 36, hexagon), // Bottom
-    new SubMesh(1, 36, 36, 36, 36, hexagon), // Top
-    new SubMesh(0, 72, 36, 72, 36, hexagon) // Sides
+    new SubMesh(0, 0, 36, 0, 36, hexagon), // Side faces
+    new SubMesh(0, 36, 18, 36, 18, hexagon), // Bottom face
+    new SubMesh(1, 54, 18, 54, 18, hexagon) // Top face (SVG texture)
   )
 
   if (position) {
@@ -644,30 +655,6 @@ const createHexagon = (
   selectionRing.renderingGroupId = 1
 
   let selectionTime = 0
-  const animateSelectionRing = () => {
-    let lastTime = performance.now()
-    const targetDelta = 1000 / 60 // 60fps in ms
-    let accumulator = 0
-
-    const animate = (currentTime: number) => {
-      const deltaTime = currentTime - lastTime
-      accumulator += deltaTime
-
-      // Update position only when enough time has accumulated
-      while (accumulator >= targetDelta) {
-        selectionTime += 0.002
-        selectionRing.rotation.y = Math.PI * 2 * (selectionTime % 1)
-
-        accumulator -= targetDelta
-      }
-
-      lastTime = currentTime
-      requestAnimationFrame(animate)
-    }
-
-    requestAnimationFrame(animate)
-  }
-  animateSelectionRing()
 
   hexagon.showSelection = () => {
     selectionTime = 0
@@ -693,33 +680,38 @@ const createHexagon = (
   signalRipple.renderingGroupId = 1
 
   let rippleTime = 0
-  const animateSignalRipple = () => {
+  const animationLoop = () => {
+    const frameTime = 1000 / 60
     let lastTime = performance.now()
-    const targetDelta = 1000 / 60 // 60fps in ms
     let accumulator = 0
 
     const animate = (currentTime: number) => {
       const deltaTime = currentTime - lastTime
+      lastTime = currentTime
       accumulator += deltaTime
 
-      // Update position only when enough time has accumulated
-      while (accumulator >= targetDelta) {
-        rippleTime += 0.02
-        const scale = 2 * (rippleTime % 1)
-        signalRipple.scaling.x = scale
-        signalRipple.scaling.z = scale
-        signalRipple.scaling.y = scale
+      // Update only when enough time has accumulated for a frame
+      while (accumulator >= frameTime) {
+        if (selectionRing.isEnabled()) {
+          selectionTime += 0.002
+          selectionRing.rotation.y = Math.PI * 2 * (selectionTime % 1)
+        }
 
-        accumulator -= targetDelta
+        if (signalRipple.isEnabled()) {
+          rippleTime += 0.02
+          signalRipple.scaling.setAll(2 * (rippleTime % 1))
+        }
+
+        accumulator -= frameTime
       }
 
-      lastTime = currentTime
       requestAnimationFrame(animate)
     }
-
     requestAnimationFrame(animate)
   }
-  animateSignalRipple()
+
+  animationLoop()
+
   hexagon.showSignalRipple = () => {
     signalRipple.setEnabled(true)
     rippleTime = 0
