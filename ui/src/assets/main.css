@@ -1,15 +1,24 @@
 @import "./base.css";
 
 #root {
-  max-width: 100vw;
-  max-height: 100vh;
+  width: 100%;
+  height: 100vh;
   margin: 0 auto;
-  padding: 1rem;
-  overflow: hidden;
+  box-sizing: border-box;
+  padding: 12px;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+}
+
+.header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  font-size: 1.5rem;
 }
 
 .scene {

@@ -26,6 +26,9 @@ import DroneIcon from "./assets/drone.svg"
 import DatabaseIcon from "./assets/database.svg"
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
 
+import earcut from "earcut"
+window.earcut = earcut
+
 declare module "@babylonjs/core/Meshes/mesh" {
   interface Mesh {
     showSelection(): void
@@ -105,7 +108,7 @@ function BjsScene() {
     scene.clearColor = new Color4(0, 0, 0, 0)
 
     const camera = new ArcRotateCamera("ArcRotateCamera", 0, 0, 45, new Vector3(0, 0, 0), scene)
-    camera.setPosition(new Vector3(0, 45, -22))
+    camera.setPosition(new Vector3(0, 46, -22))
     camera.attachControl(canvasRef.current, false)
     camera.inertia = 0.9
     camera.speed = 10
@@ -129,6 +132,8 @@ function BjsScene() {
     shadowGeneratorRef.current.frustumEdgeFalloff = 0.1
     shadowGeneratorRef.current.transparencyShadow = true
 
+    createTacticalGround(28, 8, 12, scene)
+
     const groundRadius = 30
     const ground = MeshBuilder.CreateDisc(
       "ground",
@@ -138,6 +143,12 @@ function BjsScene() {
     ground.rotation.x = Math.PI / 2
     ground.material = createRadarMaterial(scene)
     ground.receiveShadows = true
+    ground.position.y = 0.001
+
+    createTriangleMarker(new Vector3(-groundRadius, 0.1, 0), Math.PI / 2, 0.7, "right", 1, scene)
+    createTriangleMarker(new Vector3(groundRadius, 0.1, 0), -Math.PI / 2, 0.7, "left", 1, scene)
+    createTriangleMarker(new Vector3(0, 0.1, -groundRadius), 0, 0.7, "up", 1, scene)
+    createTriangleMarker(new Vector3(0, 0.1, groundRadius), Math.PI, 0.7, "down", 1, scene)
 
     for (let i = 0; i < 10; i++) {
       const type = Object.keys(icons)[Math.floor(Math.random() * Object.keys(icons).length)]
@@ -221,11 +232,6 @@ function BjsScene() {
       }
     }
 
-    createTriangleMarker(new Vector3(-groundRadius, 0.1, 0), Math.PI / 2, 0.7, "right", 2, scene)
-    createTriangleMarker(new Vector3(groundRadius, 0.1, 0), -Math.PI / 2, 0.7, "left", 2, scene)
-    createTriangleMarker(new Vector3(0, 0.1, -groundRadius), 0, 0.7, "up", 2, scene)
-    createTriangleMarker(new Vector3(0, 0.1, groundRadius), Math.PI, 0.7, "down", 2, scene)
-
     scene.onPointerDown = (e) => {
       if (e.button === 0 || e.button === 2) {
         setSelectedNode(null)
@@ -279,36 +285,36 @@ const createRadarMaterial = (scene: Scene) => {
   const texture = new DynamicTexture("radarTexture", textureSize, scene, true)
   const ctx = texture.getContext()
 
-  ctx.fillStyle = "#10111f"
+  ctx.fillStyle = "transparent"
   ctx.fillRect(0, 0, textureSize, textureSize)
 
-  ctx.strokeStyle = "#ccf0fd"
-  const numberOfCircles = 3
+  // ctx.strokeStyle = "#ccf0fd"
+  // const numberOfCircles = 3
   const centerX = textureSize / 2
   const centerY = textureSize / 2
-  const maxRadius = (textureSize / 2) * 0.75
+  // const maxRadius = (textureSize / 2) * 0.75
 
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, 40, 0, Math.PI * 2)
-  ctx.stroke()
+  // ctx.beginPath()
+  // ctx.arc(centerX, centerY, 40, 0, Math.PI * 2)
+  // ctx.stroke()
 
-  for (let i = 1; i <= numberOfCircles; i++) {
-    const radius = (maxRadius / numberOfCircles) * i
-    ctx.beginPath()
-    ctx.lineWidth = 2 + i * 2
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-    ctx.stroke()
-  }
+  // for (let i = 1; i <= numberOfCircles; i++) {
+  //   const radius = (maxRadius / numberOfCircles) * i
+  //   ctx.beginPath()
+  //   ctx.lineWidth = 2 + i * 2
+  //   ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+  //   ctx.stroke()
+  // }
 
-  ctx.lineWidth = 3
-  ctx.setLineDash([30, 10])
+  // ctx.lineWidth = 3
+  // ctx.setLineDash([30, 10])
 
-  ctx.beginPath()
-  ctx.moveTo(textureSize * 0.235, textureSize * 0.235) // Top-left to bottom-right
-  ctx.lineTo(textureSize * 0.765, textureSize * 0.765)
-  ctx.moveTo(textureSize * 0.235, textureSize * 0.765) // Bottom-left to top-right
-  ctx.lineTo(textureSize * 0.765, textureSize * 0.235)
-  ctx.stroke()
+  // ctx.beginPath()
+  // ctx.moveTo(textureSize * 0.235, textureSize * 0.235) // Top-left to bottom-right
+  // ctx.lineTo(textureSize * 0.765, textureSize * 0.765)
+  // ctx.moveTo(textureSize * 0.235, textureSize * 0.765) // Bottom-left to top-right
+  // ctx.lineTo(textureSize * 0.765, textureSize * 0.235)
+  // ctx.stroke()
 
   ctx.strokeStyle = "cyan"
   const outerRadius = textureSize / 2 - 10
@@ -329,6 +335,216 @@ const createRadarMaterial = (scene: Scene) => {
   material.ambientColor = new Color3(1, 1, 1)
 
   return material
+}
+
+const createTacticalGround = (radius: number, numberOfRings: number, numberOfSections: number, scene: Scene) => {
+  // Configuration
+  const height = 0.01
+  const ringSize = radius / numberOfRings
+  const sectionAngle = (2 * Math.PI) / numberOfSections
+
+  // Create a grid to track group assignments
+  const grid = Array(numberOfRings)
+    .fill(null)
+    .map(() => Array(numberOfSections).fill(null))
+  const sections = new Map()
+
+  const numberOfGroups = 1000
+  const groups = Array(numberOfGroups)
+    .fill(null)
+    .map((_, i) => ({
+      id: i,
+      sections: [] as Mesh[],
+    }))
+
+  const getAdjacent = (ring: number, section: number) => {
+    const adj: [number, number][] = []
+    const directions = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ]
+
+    for (const [dr, ds] of directions) {
+      const newRing = ring + dr
+      let newSection = section + ds
+      if (newSection < 0) newSection = numberOfSections - 1
+      if (newSection >= numberOfSections) newSection = 0
+
+      if (newRing >= 0 && newRing < numberOfRings) {
+        adj.push([newRing, newSection])
+      }
+    }
+    return adj
+  }
+
+  // Assign groups with strict adjacency
+  let currentGroup = 0
+  for (let ring = 0; ring < numberOfRings; ring++) {
+    for (let section = 0; section < numberOfSections; section++) {
+      if (grid[ring][section] === null) {
+        const group = groups[currentGroup]
+        const groupSize = Math.floor(Math.random() * 3) + 2 // 2-4 sections per group
+        const stack: [number, number][] = [[ring, section]]
+        let assigned = 0
+
+        while (stack.length > 0 && assigned < groupSize) {
+          const [r, s] = stack.pop()!
+          if (r >= 0 && r < numberOfRings && grid[r][s] === null) {
+            grid[r][s] = group.id
+            assigned++
+
+            const adjacent = getAdjacent(r, s)
+            for (const adj of adjacent.sort(() => Math.random() - 0.5)) {
+              if (grid[adj[0]][adj[1]] === null) {
+                stack.push(adj)
+              }
+            }
+          }
+        }
+        currentGroup = (currentGroup + 1) % groups.length
+      }
+    }
+  }
+
+  const highlightColor = new Color3(0.0, 0.55, 0.9)
+  const defaultColor = new Color3(0.0627, 0.0667, 0.1216)
+  const ground = new Mesh("tactical-ground", scene)
+
+  // Create sections based on group assignments
+  for (let ringIndex = 0; ringIndex < numberOfRings; ringIndex++) {
+    const innerRadius = ringIndex * ringSize
+    const outerRadius = (ringIndex + 1) * ringSize
+
+    for (let sectionIndex = 0; sectionIndex < numberOfSections; sectionIndex++) {
+      const startAngle = sectionIndex * sectionAngle
+      const endAngle = (sectionIndex + 1) * sectionAngle
+
+      const shape = []
+      const tessellation = 16
+
+      // Outer arc
+      for (let i = 0; i <= tessellation; i++) {
+        const angle = startAngle + (i / tessellation) * (endAngle - startAngle)
+        shape.push(new Vector3(outerRadius * Math.cos(angle), 0, outerRadius * Math.sin(angle)))
+      }
+
+      // Inner arc (reverse)
+      for (let i = tessellation; i >= 0; i--) {
+        const angle = startAngle + (i / tessellation) * (endAngle - startAngle)
+        shape.push(new Vector3(innerRadius * Math.cos(angle), 0, innerRadius * Math.sin(angle)))
+      }
+
+      const groupId = grid[ringIndex][sectionIndex]
+      const group = groups[groupId]
+
+      const section = MeshBuilder.ExtrudePolygon(
+        `section_${ringIndex}_${sectionIndex}`,
+        { shape, depth: height },
+        scene
+      )
+
+      section.parent = ground
+      section.receiveShadows = true
+      sections.set(`${ringIndex},${sectionIndex}`, section)
+      group.sections.push(section)
+
+      const material = new StandardMaterial(`mat_${ringIndex}_${sectionIndex}`, scene)
+      material.diffuseColor = defaultColor
+      material.specularColor = new Color3(0, 0, 0)
+      material.emissiveColor = new Color3(0, 0, 0)
+      material.ambientColor = new Color3(1, 1, 1)
+      section.material = material
+
+      section.actionManager = new ActionManager(scene)
+
+      section.actionManager.registerAction(
+        new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, () => {
+          group.sections.forEach((groupSection) => {
+            groupSection.position.y = height
+            ;(groupSection.material as StandardMaterial).diffuseColor = highlightColor
+            ;(groupSection.material as StandardMaterial).emissiveColor = new Color3(0.2, 0.2, 0)
+          })
+        })
+      )
+
+      section.actionManager.registerAction(
+        new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, () => {
+          group.sections.forEach((groupSection) => {
+            groupSection.position.y = 0
+            ;(groupSection.material as StandardMaterial).diffuseColor = defaultColor
+            ;(groupSection.material as StandardMaterial).emissiveColor = new Color3(0, 0, 0)
+          })
+        })
+      )
+    }
+  }
+
+  // Add gap lines between different groups
+  for (let ringIndex = 0; ringIndex < numberOfRings; ringIndex++) {
+    for (let sectionIndex = 0; sectionIndex < numberOfSections; sectionIndex++) {
+      const currentGroup = grid[ringIndex][sectionIndex]
+
+      // Check right neighbor
+      const rightSection = (sectionIndex + 1) % numberOfSections
+      if (grid[ringIndex][rightSection] !== currentGroup) {
+        const angle = (sectionIndex + 1) * sectionAngle
+        const line = MeshBuilder.CreateLines(
+          "line",
+          {
+            points: [
+              new Vector3(ringIndex * ringSize * Math.cos(angle), height, ringIndex * ringSize * Math.sin(angle)),
+              new Vector3(
+                (ringIndex + 1) * ringSize * Math.cos(angle),
+                height,
+                (ringIndex + 1) * ringSize * Math.sin(angle)
+              ),
+            ],
+          },
+          scene
+        )
+        line.parent = ground
+        line.color = new Color3(0.8, 0.941, 0.992)
+      }
+
+      // Check outer neighbor
+      if (ringIndex < numberOfRings - 1 && grid[ringIndex + 1][sectionIndex] !== currentGroup) {
+        const startAngle = sectionIndex * sectionAngle
+        const endAngle = (sectionIndex + 1) * sectionAngle
+        const points = []
+        const steps = 16
+        const radius = (ringIndex + 1) * ringSize
+
+        for (let i = 0; i <= steps; i++) {
+          const angle = startAngle + (i / steps) * (endAngle - startAngle)
+          points.push(new Vector3(radius * Math.cos(angle), height, radius * Math.sin(angle)))
+        }
+        const line = MeshBuilder.CreateLines("line", { points }, scene)
+        line.parent = ground
+        line.color = new Color3(0.8, 0.941, 0.992)
+      }
+
+      // Add outer edge line for the last ring
+      if (ringIndex === numberOfRings - 1) {
+        const startAngle = sectionIndex * sectionAngle
+        const endAngle = (sectionIndex + 1) * sectionAngle
+        const points = []
+        const steps = 16
+        const radius = numberOfRings * ringSize
+
+        for (let i = 0; i <= steps; i++) {
+          const angle = startAngle + (i / steps) * (endAngle - startAngle)
+          points.push(new Vector3(radius * Math.cos(angle), height, radius * Math.sin(angle)))
+        }
+        const line = MeshBuilder.CreateLines("line", { points }, scene)
+        line.parent = ground
+        line.color = new Color3(0.8, 0.941, 0.992)
+      }
+    }
+  }
+
+  return ground
 }
 
 const createHexagon = (

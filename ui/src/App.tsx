@@ -1,10 +1,19 @@
 import PbEngine from "./PbEngine"
 import BjsScene from "./BjsScene"
+import { GitHub } from "@mui/icons-material"
+import { IconButton } from "@mui/material"
 
 function App() {
   return (
     <>
-      <div style={{ position: "absolute", zIndex: 10, fontSize: "1.4rem" }}>PHASEBLADE</div>
+      <div className="header">
+        <b>PHASEBLADE</b>
+        <a href="https://github.com/AmyangXYZ/Phaseblade" target="_blank">
+          <IconButton>
+            <GitHub sx={{ color: "white" }} />
+          </IconButton>
+        </a>
+      </div>
       <BjsScene />
       <PbEngine />
     </>
