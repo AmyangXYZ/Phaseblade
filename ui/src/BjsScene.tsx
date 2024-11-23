@@ -125,30 +125,17 @@ function BjsScene() {
     const directionalLight = new DirectionalLight("DirectionalLight", new Vector3(0, -10, 0), scene)
     directionalLight.intensity = 0.7
 
-    shadowGeneratorRef.current = new ShadowGenerator(1024, directionalLight, true)
+    shadowGeneratorRef.current = new ShadowGenerator(4096, directionalLight, true)
     shadowGeneratorRef.current.usePercentageCloserFiltering = true
     shadowGeneratorRef.current.forceBackFacesOnly = true
-    shadowGeneratorRef.current.filteringQuality = ShadowGenerator.QUALITY_HIGH
+    shadowGeneratorRef.current.filteringQuality = ShadowGenerator.QUALITY_MEDIUM
     shadowGeneratorRef.current.frustumEdgeFalloff = 0.1
     shadowGeneratorRef.current.transparencyShadow = true
+    shadowGeneratorRef.current.useBlurExponentialShadowMap = true
+    shadowGeneratorRef.current.blurScale = 2
 
-    createTacticalGround(28, 8, 12, scene)
-
-    const groundRadius = 30
-    const ground = MeshBuilder.CreateDisc(
-      "ground",
-      { radius: groundRadius, updatable: false, tessellation: 1024 },
-      scene
-    )
-    ground.rotation.x = Math.PI / 2
-    ground.material = createRadarMaterial(scene)
-    ground.receiveShadows = true
-    ground.position.y = 0.001
-
-    createTriangleMarker(new Vector3(-groundRadius, 0.1, 0), Math.PI / 2, 0.7, "right", 1, scene)
-    createTriangleMarker(new Vector3(groundRadius, 0.1, 0), -Math.PI / 2, 0.7, "left", 1, scene)
-    createTriangleMarker(new Vector3(0, 0.1, -groundRadius), 0, 0.7, "up", 1, scene)
-    createTriangleMarker(new Vector3(0, 0.1, groundRadius), Math.PI, 0.7, "down", 1, scene)
+    createRadarGround(30, scene)
+    createTacticalGround(28, 9, 12, scene)
 
     for (let i = 0; i < 10; i++) {
       const type = Object.keys(icons)[Math.floor(Math.random() * Object.keys(icons).length)]
@@ -277,64 +264,76 @@ function BjsScene() {
   )
 }
 
-const createRadarMaterial = (scene: Scene) => {
-  const material = new StandardMaterial("radarMaterial", scene)
-  material.backFaceCulling = false
+const createRadarGround = (radius: number, scene: Scene) => {
+  const createRadarMaterial = (scene: Scene) => {
+    const material = new StandardMaterial("radarMaterial", scene)
+    material.backFaceCulling = false
 
-  const textureSize = 4096
-  const texture = new DynamicTexture("radarTexture", textureSize, scene, true)
-  const ctx = texture.getContext()
+    const textureSize = 4096
+    const texture = new DynamicTexture("radarTexture", textureSize, scene, true)
+    const ctx = texture.getContext()
 
-  ctx.fillStyle = "transparent"
-  ctx.fillRect(0, 0, textureSize, textureSize)
+    ctx.fillStyle = "transparent"
+    ctx.fillRect(0, 0, textureSize, textureSize)
 
-  // ctx.strokeStyle = "#ccf0fd"
-  // const numberOfCircles = 3
-  const centerX = textureSize / 2
-  const centerY = textureSize / 2
-  // const maxRadius = (textureSize / 2) * 0.75
+    // ctx.strokeStyle = "#ccf0fd"
+    // const numberOfCircles = 3
+    const centerX = textureSize / 2
+    const centerY = textureSize / 2
+    // const maxRadius = (textureSize / 2) * 0.75
 
-  // ctx.beginPath()
-  // ctx.arc(centerX, centerY, 40, 0, Math.PI * 2)
-  // ctx.stroke()
+    // ctx.beginPath()
+    // ctx.arc(centerX, centerY, 40, 0, Math.PI * 2)
+    // ctx.stroke()
 
-  // for (let i = 1; i <= numberOfCircles; i++) {
-  //   const radius = (maxRadius / numberOfCircles) * i
-  //   ctx.beginPath()
-  //   ctx.lineWidth = 2 + i * 2
-  //   ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-  //   ctx.stroke()
-  // }
+    // for (let i = 1; i <= numberOfCircles; i++) {
+    //   const radius = (maxRadius / numberOfCircles) * i
+    //   ctx.beginPath()
+    //   ctx.lineWidth = 2 + i * 2
+    //   ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+    //   ctx.stroke()
+    // }
 
-  // ctx.lineWidth = 3
-  // ctx.setLineDash([30, 10])
+    // ctx.lineWidth = 3
+    // ctx.setLineDash([30, 10])
 
-  // ctx.beginPath()
-  // ctx.moveTo(textureSize * 0.235, textureSize * 0.235) // Top-left to bottom-right
-  // ctx.lineTo(textureSize * 0.765, textureSize * 0.765)
-  // ctx.moveTo(textureSize * 0.235, textureSize * 0.765) // Bottom-left to top-right
-  // ctx.lineTo(textureSize * 0.765, textureSize * 0.235)
-  // ctx.stroke()
+    // ctx.beginPath()
+    // ctx.moveTo(textureSize * 0.235, textureSize * 0.235) // Top-left to bottom-right
+    // ctx.lineTo(textureSize * 0.765, textureSize * 0.765)
+    // ctx.moveTo(textureSize * 0.235, textureSize * 0.765) // Bottom-left to top-right
+    // ctx.lineTo(textureSize * 0.765, textureSize * 0.235)
+    // ctx.stroke()
 
-  ctx.strokeStyle = "cyan"
-  const outerRadius = textureSize / 2 - 10
-  ctx.lineWidth = 20
-  ctx.setLineDash([outerRadius * Math.PI * (41 / 180), outerRadius * Math.PI * (4 / 180)])
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, outerRadius, (2 * Math.PI) / 180, (Math.PI * 360) / 180)
-  ctx.stroke()
-  ctx.setLineDash([])
+    ctx.strokeStyle = "cyan"
+    const outerRadius = textureSize / 2 - 10
+    ctx.lineWidth = 20
+    ctx.setLineDash([outerRadius * Math.PI * (41 / 180), outerRadius * Math.PI * (4 / 180)])
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, outerRadius, (2 * Math.PI) / 180, (Math.PI * 360) / 180)
+    ctx.stroke()
+    ctx.setLineDash([])
 
-  texture.hasAlpha = true
-  texture.update()
+    texture.hasAlpha = true
+    texture.update()
 
-  material.diffuseTexture = texture
-  material.useAlphaFromDiffuseTexture = true
-  material.emissiveColor = new Color3(0, 0.5, 0.5)
-  material.specularColor = new Color3(0, 0, 0)
-  material.ambientColor = new Color3(1, 1, 1)
+    material.diffuseTexture = texture
+    material.useAlphaFromDiffuseTexture = true
+    material.emissiveColor = new Color3(0, 0.5, 0.5)
+    material.specularColor = new Color3(0, 0, 0)
+    material.ambientColor = new Color3(1, 1, 1)
 
-  return material
+    return material
+  }
+
+  const ground = MeshBuilder.CreateDisc("ground", { radius, updatable: false, tessellation: 64 }, scene)
+  ground.rotation.x = Math.PI / 2
+  ground.position.y = 0.01
+  ground.material = createRadarMaterial(scene)
+
+  createTriangleMarker(new Vector3(-radius, 0.1, 0), Math.PI / 2, 0.7, "right", 1, scene)
+  createTriangleMarker(new Vector3(radius, 0.1, 0), -Math.PI / 2, 0.7, "left", 1, scene)
+  createTriangleMarker(new Vector3(0, 0.1, -radius), 0, 0.7, "up", 1, scene)
+  createTriangleMarker(new Vector3(0, 0.1, radius), Math.PI, 0.7, "down", 1, scene)
 }
 
 const createTacticalGround = (radius: number, numberOfRings: number, numberOfSections: number, scene: Scene) => {
@@ -348,14 +347,7 @@ const createTacticalGround = (radius: number, numberOfRings: number, numberOfSec
     .fill(null)
     .map(() => Array(numberOfSections).fill(null))
   const sections = new Map()
-
-  const numberOfGroups = 1000
-  const groups = Array(numberOfGroups)
-    .fill(null)
-    .map((_, i) => ({
-      id: i,
-      sections: [] as Mesh[],
-    }))
+  const groups = new Map()
 
   const getAdjacent = (ring: number, section: number) => {
     const adj: [number, number][] = []
@@ -380,12 +372,18 @@ const createTacticalGround = (radius: number, numberOfRings: number, numberOfSec
   }
 
   // Assign groups with strict adjacency
-  let currentGroup = 0
+  let nextGroupId = 0
   for (let ring = 0; ring < numberOfRings; ring++) {
     for (let section = 0; section < numberOfSections; section++) {
       if (grid[ring][section] === null) {
-        const group = groups[currentGroup]
-        const groupSize = Math.floor(Math.random() * 3) + 2 // 2-4 sections per group
+        const groupId = nextGroupId++
+        const group = {
+          id: groupId,
+          sections: [] as Mesh[],
+        }
+        groups.set(groupId, group)
+
+        const groupSize = Math.floor(Math.random() * 4) + 2
         const stack: [number, number][] = [[ring, section]]
         let assigned = 0
 
@@ -403,12 +401,11 @@ const createTacticalGround = (radius: number, numberOfRings: number, numberOfSec
             }
           }
         }
-        currentGroup = (currentGroup + 1) % groups.length
       }
     }
   }
 
-  const highlightColor = new Color3(0.0, 0.55, 0.9)
+  const highlightColor = new Color3(0.0, 0.6, 1)
   const defaultColor = new Color3(0.0627, 0.0667, 0.1216)
   const ground = new Mesh("tactical-ground", scene)
 
@@ -437,7 +434,7 @@ const createTacticalGround = (radius: number, numberOfRings: number, numberOfSec
       }
 
       const groupId = grid[ringIndex][sectionIndex]
-      const group = groups[groupId]
+      const group = groups.get(groupId)
 
       const section = MeshBuilder.ExtrudePolygon(
         `section_${ringIndex}_${sectionIndex}`,
@@ -461,7 +458,7 @@ const createTacticalGround = (radius: number, numberOfRings: number, numberOfSec
 
       section.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, () => {
-          group.sections.forEach((groupSection) => {
+          group.sections.forEach((groupSection: Mesh) => {
             groupSection.position.y = height
             ;(groupSection.material as StandardMaterial).diffuseColor = highlightColor
             ;(groupSection.material as StandardMaterial).emissiveColor = new Color3(0.2, 0.2, 0)
@@ -471,7 +468,7 @@ const createTacticalGround = (radius: number, numberOfRings: number, numberOfSec
 
       section.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, () => {
-          group.sections.forEach((groupSection) => {
+          group.sections.forEach((groupSection: Mesh) => {
             groupSection.position.y = 0
             ;(groupSection.material as StandardMaterial).diffuseColor = defaultColor
             ;(groupSection.material as StandardMaterial).emissiveColor = new Color3(0, 0, 0)
