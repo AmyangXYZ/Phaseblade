@@ -69,7 +69,7 @@ impl Engine {
 
     #[wasm_bindgen]
     pub fn step(&mut self) {
-        println!("Cycle {}", self.cycle);
+        // println!("Cycle {}", self.cycle);
         // split the in_transit packets
         if !self.in_transit_packets.is_empty() {
             let (in_transit, delivering): (Vec<_>, Vec<_>) = self
@@ -107,7 +107,8 @@ impl Engine {
     #[wasm_bindgen]
     pub fn run(&mut self, cycles: u64) {
         let start = Instant::now();
-        while self.cycle < self.cycle + cycles {
+        let total_cycles = self.cycle + cycles;
+        while self.cycle < total_cycles {
             self.step();
         }
 

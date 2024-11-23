@@ -21,77 +21,32 @@ import {
 } from "@babylonjs/core"
 import { useEffect, useRef, useState } from "react"
 import Card from "./components/Card"
-import TruckIcon from "./assets/truck.svg"
-import DroneIcon from "./assets/drone.svg"
-import DatabaseIcon from "./assets/database.svg"
+import TruckIcon from "./assets/icons/truck-fast.svg"
+import DroneIcon from "./assets/icons/drone.svg"
+import DatabaseIcon from "./assets/icons/database.svg"
+import ChessRookIcon from "./assets/icons/chess-rook.svg"
+import IndustryIcon from "./assets/icons/industry-windows.svg"
+import StarIcon from "./assets/icons/star.svg"
+import GasPumpIcon from "./assets/icons/gas-pump.svg"
+import BoxesIcon from "./assets/icons/boxes-stacked.svg"
+
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
+
+import { Unit } from "./index"
 
 import earcut from "earcut"
 window.earcut = earcut
 
-declare module "@babylonjs/core/Meshes/mesh" {
-  interface Mesh {
-    showSelection(): void
-    hideSelection(): void
-    toggleSelection(): void
-    showSignalRipple(): void
-    hideSignalRipple(): void
-    toggleSignalRipple(): void
-  }
+const UnitTypes: Record<string, Unit> = {
+  vehicle: { label: "Vehicle", icon: TruckIcon, type: "vehicle", isStatic: false },
+  drone: { label: "Drone", icon: DroneIcon, type: "drone", isStatic: false },
+  dataHub: { label: "Data Hub", icon: DatabaseIcon, type: "dataHub", isStatic: true },
+  c2: { label: "Command & Control", icon: ChessRookIcon, type: "c2", isStatic: true },
+  depot: { label: "Supply Depot", icon: IndustryIcon, type: "depot", isStatic: true },
+  outpost: { label: "Outpost", icon: StarIcon, type: "outpost", isStatic: true },
+  fuelStation: { label: "Fuel Station", icon: GasPumpIcon, type: "fuelStation", isStatic: true },
+  cargo: { label: "Cargo", icon: BoxesIcon, type: "cargo", isStatic: true },
 }
-
-declare module "@babylonjs/core/Meshes/abstractMesh" {
-  interface AbstractMesh {
-    showSelection(): void
-    hideSelection(): void
-    toggleSelection(): void
-    showSignalRipple(): void
-    hideSignalRipple(): void
-    toggleSignalRipple(): void
-  }
-}
-
-ArcRotateCamera.prototype.spinTo = function (
-  this: ArcRotateCamera,
-  targetPosition: Vector3,
-  targetTarget: Vector3 = new Vector3(0, 12, 0),
-  duration: number = 1000
-): void {
-  const startPosition = this.position.clone()
-  const startTarget = this.target.clone()
-  const startTime = performance.now()
-
-  const smoothStep = (x: number): number => {
-    return x * x * (3 - 2 * x)
-  }
-
-  const animate = (currentTime: number) => {
-    const elapsedTime = currentTime - startTime
-    const progress = Math.min(elapsedTime / duration, 1)
-
-    const easedProgress = smoothStep(progress)
-
-    const newPosition = Vector3.Lerp(startPosition, targetPosition, easedProgress)
-    const newTarget = Vector3.Lerp(startTarget, targetTarget, easedProgress)
-
-    this.position = newPosition
-    this.setTarget(newTarget)
-
-    if (progress < 1) {
-      requestAnimationFrame(animate)
-    }
-  }
-
-  requestAnimationFrame(animate)
-}
-
-declare module "@babylonjs/core/Cameras/arcRotateCamera" {
-  interface ArcRotateCamera {
-    spinTo(targetPosition: Vector3, targetTarget?: Vector3, duration?: number): void
-  }
-}
-
-const icons: Record<string, string> = { truck: TruckIcon, drone: DroneIcon, database: DatabaseIcon }
 
 function BjsScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -137,10 +92,10 @@ function BjsScene() {
     createRadarGround(30, scene)
     createTacticalGround(28, 9, 12, scene)
 
-    for (let i = 0; i < 10; i++) {
-      const type = Object.keys(icons)[Math.floor(Math.random() * Object.keys(icons).length)]
-      const node = createHexagon(`${type}-${i}`, scene, {
-        svg: icons[type],
+    for (let i = 0; i < 20; i++) {
+      const unit = UnitTypes[Object.keys(UnitTypes)[Math.floor(Math.random() * Object.keys(UnitTypes).length)]]
+      const node = createHexagon(`${unit.type}-${i}`, scene, {
+        svg: unit.icon,
         position: new Vector3(Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20),
         diameter: 2,
       })
@@ -180,7 +135,7 @@ function BjsScene() {
         z: Math.random() * 0.2 - 0.1,
       }
 
-      if (type !== "database") {
+      if (!unit.isStatic) {
         let lastTime = performance.now()
         const targetDelta = 1000 / 60
         let accumulator = 0
@@ -248,7 +203,6 @@ function BjsScene() {
 
   useEffect(() => {
     selectedNodeRef.current = selectedNode
-    console.log("selectedNode", selectedNodeRef.current)
   }, [selectedNode])
 
   return (
@@ -256,8 +210,8 @@ function BjsScene() {
       <canvas ref={canvasRef} className="scene"></canvas>
       {selectedNode && (
         <Card
-          title={`Mission - ${selectedNode}`}
-          icon={<img src={icons[selectedNode.split("-")[0]]} />}
+          title={UnitTypes[selectedNode.split("-")[0]].label}
+          icon={<img src={UnitTypes[selectedNode.split("-")[0]].icon} />}
           subtitle="RETRIEVE VALUABLE DATA"
           body={<div>Retrieve and transmit the vital research data.</div>}
           footer="SELECT MISSION"
@@ -693,7 +647,7 @@ const createHexagon = (
       // Update only when enough time has accumulated for a frame
       while (accumulator >= frameTime) {
         if (selectionRing.isEnabled()) {
-          selectionTime += 0.002
+          selectionTime += 0.005
           selectionRing.rotation.y = Math.PI * 2 * (selectionTime % 1)
         }
 
@@ -884,6 +838,40 @@ const createTriangleMarker = (
 
     lastTime = currentTime
     requestAnimationFrame(animate)
+  }
+
+  requestAnimationFrame(animate)
+}
+
+ArcRotateCamera.prototype.spinTo = function (
+  this: ArcRotateCamera,
+  targetPosition: Vector3,
+  targetTarget: Vector3 = new Vector3(0, 12, 0),
+  duration: number = 1000
+): void {
+  const startPosition = this.position.clone()
+  const startTarget = this.target.clone()
+  const startTime = performance.now()
+
+  const smoothStep = (x: number): number => {
+    return x * x * (3 - 2 * x)
+  }
+
+  const animate = (currentTime: number) => {
+    const elapsedTime = currentTime - startTime
+    const progress = Math.min(elapsedTime / duration, 1)
+
+    const easedProgress = smoothStep(progress)
+
+    const newPosition = Vector3.Lerp(startPosition, targetPosition, easedProgress)
+    const newTarget = Vector3.Lerp(startTarget, targetTarget, easedProgress)
+
+    this.position = newPosition
+    this.setTarget(newTarget)
+
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    }
   }
 
   requestAnimationFrame(animate)
