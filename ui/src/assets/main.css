@@ -5,11 +5,17 @@
   height: 100vh;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 12px;
+  padding: 6px 12px;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+}
+
+.glow {
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  color: rgb(138, 214, 217);
+  font-weight: 700;
 }
 
 .header {
@@ -20,6 +26,20 @@
   align-items: center;
   z-index: 10;
   font-size: 1.5rem;
+}
+
+.status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 12px;
+  background-color: rgba(10, 12, 16, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  z-index: 10;
 }
 
 .scene {

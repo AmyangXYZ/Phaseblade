@@ -34,8 +34,8 @@ function Card({
             <div className="card-header-divider" />
           </>
         )}
-        <div className="card-body">{body}</div>
-        {footer && (
+        {title && body ? <div className="card-body">{body}</div> : <div className="card-body-compact">{body}</div>}
+        {title && footer && (
           <>
             <div className="card-footer-divider" />
             <div className="card-footer">{footer}</div>

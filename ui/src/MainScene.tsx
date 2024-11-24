@@ -89,7 +89,7 @@ function BjsScene() {
     shadowGeneratorRef.current.useBlurExponentialShadowMap = true
     shadowGeneratorRef.current.blurScale = 2
 
-    createRadarGround(30, scene)
+    createRadarGround(31, scene)
     createTacticalGround(28, 9, 12, scene)
 
     for (let i = 0; i < 20; i++) {
@@ -370,8 +370,8 @@ const createTacticalGround = (radius: number, numberOfRings: number, numberOfSec
     }
   }
 
-  const highlightColor = new Color3(0.0, 0.6, 1)
-  const defaultColor = new Color3(0.0627, 0.0667, 0.1216)
+  const highlightColor = new Color3(0.2, 0.6, 1)
+  const defaultColor = Color3.FromHexString("#0c1319")
   const ground = new Mesh("tactical-ground", scene)
 
   // Create sections based on group assignments
