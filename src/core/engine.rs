@@ -36,7 +36,7 @@ impl Engine {
     }
 
     #[wasm_bindgen(js_name = getState)]
-    pub fn get_state(&self) -> EngineState {
+    pub fn get_state(&self) -> JsValue {
         let node_states: Vec<NodeState> = self
             .nodes
             .iter()
@@ -49,10 +49,7 @@ impl Engine {
             })
             .collect();
 
-        EngineState {
-            cycle: self.cycle,
-            node_states,
-        }
+        serde_wasm_bindgen::to_value(&EngineState::new(self.cycle, node_states)).unwrap()
     }
 
     #[wasm_bindgen(js_name = addTschNode)]
@@ -68,7 +65,7 @@ impl Engine {
     }
 
     #[wasm_bindgen]
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> JsValue {
         // println!("Cycle {}", self.cycle);
         // split the in_transit packets
         if !self.in_transit_packets.is_empty() {
@@ -102,6 +99,7 @@ impl Engine {
             }
         }
         self.cycle += 1;
+        self.get_state()
     }
 
     #[wasm_bindgen]
@@ -125,6 +123,10 @@ pub struct EngineState {
 
 #[wasm_bindgen]
 impl EngineState {
+    pub fn new(cycle: u64, node_states: Vec<NodeState>) -> Self {
+        Self { cycle, node_states }
+    }
+
     #[wasm_bindgen(getter)]
     pub fn cycle(&self) -> u64 {
         self.cycle
