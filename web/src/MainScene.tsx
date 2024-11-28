@@ -240,6 +240,12 @@ function BjsScene({
       },
       series: [
         {
+          color: [
+            "rgba(0, 183, 255, 0.85)", // Electric Blue
+            "rgba(255, 237, 0, 0.85)", // Signature Yellow
+            "rgba(255, 0, 60, 0.85)", // Hot Red
+            "rgba(0, 255, 140, 0.85)", // Matrix Green
+          ],
           name: "Access From",
           type: "pie",
           radius: ["45%", "78%"],
@@ -250,7 +256,6 @@ function BjsScene({
             borderColor: "#fff",
             borderWidth: 2,
           },
-          padAngle: 2,
           label: {
             show: true,
             position: "inner",
@@ -260,6 +265,8 @@ function BjsScene({
             { value: 1248, name: "MAC" },
             { value: 735, name: "APP" },
             { value: 580, name: "NET" },
+            { value: 580, name: "SYNC" },
+            { value: 700, name: "IDLE", itemStyle: { color: "rgba(48, 48, 48, 0.85)" } },
           ],
           animation: false,
         },
@@ -268,7 +275,7 @@ function BjsScene({
     taskScheduleChartRef.current.setOption(option)
     let angle = 0
     const timer = setInterval(() => {
-      angle = (angle + 0.5) % 360
+      angle = (angle + 2) % 360
       taskScheduleChartRef.current?.setOption({
         series: [
           {
@@ -276,7 +283,7 @@ function BjsScene({
           },
         ],
       })
-    }, 1000 / 60)
+    }, 1000 / 5)
 
     return () => {
       clearInterval(timer)
