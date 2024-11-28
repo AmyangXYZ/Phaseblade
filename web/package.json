@@ -19,6 +19,7 @@
     "@mui/material": "^6.1.7",
     "@types/earcut": "^2.1.4",
     "earcut": "^3.0.0",
+    "echarts": "^5.5.1",
     "phaseblade": "file:./pkg",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

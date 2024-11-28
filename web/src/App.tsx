@@ -4,6 +4,18 @@ import { useEffect, useState } from "react"
 import { useRef } from "react"
 import { EngineState } from "phaseblade"
 import StatusBar from "./StatusBar"
+import { createTheme, ThemeProvider } from "@mui/material/styles"
+import { CssBaseline } from "@mui/material"
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    background: {
+      default: "#0f1116",
+      paper: "#0f1116",
+    },
+  },
+})
 
 function App() {
   const workerRef = useRef<Worker | null>(null)
@@ -51,12 +63,13 @@ function App() {
   }
 
   return (
-    <>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
       <Header step={step} addNode={addNode} />
       <MainScene newNode={newNode} />
       <StatusBar cycle={engineState?.cycle || 0n} />
       {engineState && <pre>{JSON.stringify(engineState, null, 2)}</pre>}
-    </>
+    </ThemeProvider>
   )
 }
 
