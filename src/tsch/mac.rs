@@ -16,7 +16,7 @@ impl TschMacTask {
             id,
             name: name.to_string(),
             priority,
-            execution_cycles: 1,
+            execution_cycles: 5,
             wake_tick: 0,
             micros_per_tick,
             mailbox: Mailbox::new(),

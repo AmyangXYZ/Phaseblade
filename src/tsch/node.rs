@@ -52,6 +52,10 @@ impl Node for TschNode {
         self.local_cycle
     }
 
+    fn set_local_cycle(&mut self, local_cycle: u64) {
+        self.local_cycle = local_cycle;
+    }
+
     fn get_local_time(&self) -> f64 {
         self.local_time
     }

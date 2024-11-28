@@ -19,7 +19,7 @@ function Header({
         <Button variant="contained" onClick={step}>
           Step
         </Button>
-        <Button variant="contained" onClick={() => addNode(0, "TSCH", 10n, 0n, 10n)}>
+        <Button variant="contained" onClick={() => addNode(Math.floor(Math.random() * 1000), "TSCH", 10n, 0n, 10n)}>
           Add TSCH Node
         </Button>
       </div>

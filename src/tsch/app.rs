@@ -61,7 +61,7 @@ impl Task for SensorTask {
     fn is_ready(&mut self, current_tick: u64) -> bool {
         if current_tick >= self.wake_tick {
             println!("SensorTask {} is ready at tick {}", self.id, current_tick);
-            self.execution_cycles = 2;
+            self.execution_cycles = 7;
             true
         } else {
             false

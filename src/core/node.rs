@@ -6,6 +6,7 @@ pub trait Node {
     fn get_cycle_offset(&self) -> u64;
     fn get_cycles_per_tick(&self) -> u64;
     fn get_local_cycle(&self) -> u64;
+    fn set_local_cycle(&mut self, local_cycle: u64);
     fn get_local_time(&self) -> f64;
     fn set_local_time(&mut self, local_time: f64);
     fn get_clock_drift_factor(&self) -> f64;
@@ -25,7 +26,7 @@ pub trait Node {
     }
 
     fn is_new_tick(&self, local_cycle: u64) -> bool {
-        local_cycle % self.get_cycles_per_tick() == 0
+        (local_cycle - 1) % self.get_cycles_per_tick() == 0
     }
 
     fn update_local_time(&mut self, _local_cycle: u64) {
@@ -78,6 +79,11 @@ pub trait Node {
                 break;
             }
         }
+
+        for _ in current_cycle..cycles_per_tick {
+            schedule.push(u16::MAX);
+        }
+
         println!(
             "Constructed task schedule: {:?} at tick {}",
             schedule, current_tick
@@ -102,23 +108,25 @@ pub trait Node {
 
     fn execute(&mut self, cycle: u64) {
         let local_cycle = self.calculate_local_cycle(cycle);
+        self.set_local_cycle(local_cycle);
 
         self.update_local_time(local_cycle);
         let local_time = self.get_local_time();
         let cycles_per_tick = self.get_cycles_per_tick();
-        let current_tick = local_cycle / cycles_per_tick;
 
         if self.is_new_tick(local_cycle) {
+            let current_tick = (local_cycle - 1) / cycles_per_tick;
             self.construct_task_schedule(current_tick);
         }
 
         if let Some(task_id) = self
             .get_task_schedule()
-            .get((local_cycle % cycles_per_tick) as usize)
+            .get(((local_cycle - 1) % cycles_per_tick) as usize)
             .cloned()
         {
             if let Some(task) = self.get_tasks_mut().get_mut(&task_id) {
                 let messages = task.execute(local_time);
+                println!("Task {} executed at cycle {}", task_id, local_cycle);
                 for message in messages {
                     if message.has_packet() {
                         if let Some(packet) = message.get_packet() {

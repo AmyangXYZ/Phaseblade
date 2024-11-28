@@ -11,52 +11,41 @@ import {
   ActionManager,
   ExecuteCodeAction,
 } from "@babylonjs/core"
-import { useEffect, useRef, useState } from "react"
-import Card from "./components/Card"
+import { useEffect, useRef } from "react"
 import { createRadarGround, createTacticalGround, createHexagon } from "./sceneHelper"
 
-import TruckIcon from "./assets/icons/truck-fast.svg"
-import DroneIcon from "./assets/icons/drone.svg"
-import DatabaseIcon from "./assets/icons/database.svg"
-import ChessRookIcon from "./assets/icons/chess-rook.svg"
-import IndustryIcon from "./assets/icons/industry-windows.svg"
-import StarIcon from "./assets/icons/star.svg"
-import GasPumpIcon from "./assets/icons/gas-pump.svg"
-import BoxesIcon from "./assets/icons/boxes-stacked.svg"
-
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
-import * as echarts from "echarts"
 
-import { Unit } from "./index"
+import { UnitTypes } from "./units"
 
 import earcut from "earcut"
 window.earcut = earcut
 
-const UnitTypes: Record<string, Unit> = {
-  vehicle: { label: "Vehicle", icon: TruckIcon, type: "vehicle", isStatic: false },
-  drone: { label: "Drone", icon: DroneIcon, type: "drone", isStatic: false },
-  dataHub: { label: "Data Hub", icon: DatabaseIcon, type: "dataHub", isStatic: true },
-  c2: { label: "Command & Control", icon: ChessRookIcon, type: "c2", isStatic: true },
-  depot: { label: "Supply Depot", icon: IndustryIcon, type: "depot", isStatic: true },
-  outpost: { label: "Outpost", icon: StarIcon, type: "outpost", isStatic: true },
-  fuelStation: { label: "Fuel Station", icon: GasPumpIcon, type: "fuelStation", isStatic: true },
-  cargo: { label: "Cargo", icon: BoxesIcon, type: "cargo", isStatic: true },
-}
-
 function BjsScene({
   newNode,
+  selectedNode,
+  setSelectedNode,
 }: {
-  newNode: { id: number; type: string; cycle_per_tick: bigint; cycle_offset: bigint; micros_per_tick: bigint } | null
+  newNode: {
+    id: number
+    protocol: string
+    cycle_per_tick: bigint
+    cycle_offset: bigint
+    micros_per_tick: bigint
+  } | null
+  selectedNode: string | null
+  setSelectedNode: (node: string | null) => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bjsEngineRef = useRef<Engine | null>(null)
   const sceneRef = useRef<Scene | null>(null)
   const cameraRef = useRef<ArcRotateCamera | null>(null)
   const shadowGeneratorRef = useRef<ShadowGenerator | null>(null)
-  const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const selectedNodeRef = useRef<string | null>(null)
-  const taskScheduleChartRef = useRef<echarts.EChartsType | null>(null)
-  const taskScheduleChartDomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    selectedNodeRef.current = selectedNode
+  }, [selectedNode])
 
   useEffect(() => {
     if (!canvasRef.current || bjsEngineRef.current) return
@@ -119,7 +108,7 @@ function BjsScene({
       engine.resize()
       scene!.render()
     })
-  }, [])
+  }, [setSelectedNode])
 
   useEffect(() => {
     if (newNode && sceneRef.current && cameraRef.current) {
@@ -140,7 +129,6 @@ function BjsScene({
         new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
           if (selectedNodeRef.current === node.name) {
             node.hideSelection()
-            setSelectedNode(null)
             return
           }
 
@@ -209,116 +197,9 @@ function BjsScene({
         requestAnimationFrame(animate)
       }
     }
-  }, [newNode])
+  }, [newNode, setSelectedNode])
 
-  useEffect(() => {
-    selectedNodeRef.current = selectedNode
-    if (!taskScheduleChartDomRef.current) return
-    if (!taskScheduleChartRef.current) {
-      taskScheduleChartRef.current = echarts.init(taskScheduleChartDomRef.current)
-    }
-    const option = {
-      graphic: {
-        elements: [
-          {
-            zlevel: 10,
-            type: "polygon",
-            shape: {
-              points: [
-                [-8, 16],
-                [8, 16],
-                [0, 0],
-              ],
-            },
-            left: 373 / 2 - 8,
-            bottom: 12, // Changed from position array
-            style: {
-              fill: "cyan",
-            },
-          },
-        ],
-      },
-      series: [
-        {
-          color: [
-            "rgba(0, 183, 255, 0.85)", // Electric Blue
-            "rgba(255, 237, 0, 0.85)", // Signature Yellow
-            "rgba(255, 0, 60, 0.85)", // Hot Red
-            "rgba(0, 255, 140, 0.85)", // Matrix Green
-          ],
-          name: "Access From",
-          type: "pie",
-          radius: ["45%", "78%"],
-          avoidLabelOverlap: false,
-          startAngle: 0,
-          itemStyle: {
-            borderRadius: 5,
-            borderColor: "#fff",
-            borderWidth: 2,
-          },
-          label: {
-            show: true,
-            position: "inner",
-            fontSize: 14,
-          },
-          data: [
-            { value: 1248, name: "MAC" },
-            { value: 735, name: "APP" },
-            { value: 580, name: "NET" },
-            { value: 580, name: "SYNC" },
-            { value: 700, name: "IDLE", itemStyle: { color: "rgba(48, 48, 48, 0.85)" } },
-          ],
-          animation: false,
-        },
-      ],
-    }
-    taskScheduleChartRef.current.setOption(option)
-    let angle = 0
-    const timer = setInterval(() => {
-      angle = (angle + 2) % 360
-      taskScheduleChartRef.current?.setOption({
-        series: [
-          {
-            startAngle: angle,
-          },
-        ],
-      })
-    }, 1000 / 5)
-
-    return () => {
-      clearInterval(timer)
-      taskScheduleChartRef.current?.dispose()
-      taskScheduleChartRef.current = null
-    }
-  }, [selectedNode])
-
-  return (
-    <>
-      <canvas ref={canvasRef} className="scene"></canvas>
-      {selectedNode && (
-        <Card
-          title={UnitTypes[selectedNode.split("-")[0]].label}
-          icon={<img src={UnitTypes[selectedNode.split("-")[0]].icon} />}
-          subtitle="RETRIEVE VALUABLE DATA"
-          body={
-            <>
-              <div>Retrieve and transmit the vital research data.</div>
-              <div ref={taskScheduleChartDomRef} style={{ width: "373px", height: "360px" }}></div>
-            </>
-          }
-          footer="SELECT MISSION"
-          width="420px"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "calc(50% + 100px)",
-            transform: "translateY(-50%)",
-            zIndex: 10,
-          }}
-        />
-      )}
-    </>
-  )
+  return <canvas ref={canvasRef} className="scene"></canvas>
 }
 
 export default BjsScene
@@ -355,4 +236,32 @@ ArcRotateCamera.prototype.spinTo = function (
   }
 
   requestAnimationFrame(animate)
+}
+
+declare module "@babylonjs/core/Meshes/mesh" {
+  interface Mesh {
+    showSelection(): void
+    hideSelection(): void
+    toggleSelection(): void
+    showSignalRipple(): void
+    hideSignalRipple(): void
+    toggleSignalRipple(): void
+  }
+}
+
+declare module "@babylonjs/core/Meshes/abstractMesh" {
+  interface AbstractMesh {
+    showSelection(): void
+    hideSelection(): void
+    toggleSelection(): void
+    showSignalRipple(): void
+    hideSignalRipple(): void
+    toggleSignalRipple(): void
+  }
+}
+
+declare module "@babylonjs/core/Cameras/arcRotateCamera" {
+  interface ArcRotateCamera {
+    spinTo(targetPosition: Vector3, targetTarget?: Vector3, duration?: number): void
+  }
 }

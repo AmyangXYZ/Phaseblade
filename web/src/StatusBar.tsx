@@ -1,7 +1,7 @@
 import { NotificationsNone } from "@mui/icons-material"
 import { IconButton, Tooltip } from "@mui/material"
 
-export default function StatusBar({ cycle }: { cycle: bigint }) {
+export default function StatusBar({ cycle, numNodes }: { cycle: bigint; numNodes: number }) {
   return (
     <div className="status-bar">
       <div className="status-bar-left">
@@ -10,13 +10,12 @@ export default function StatusBar({ cycle }: { cycle: bigint }) {
           title={
             <div className="tooltip-content">
               <h3>Nodes</h3>
-              {/* Add any other components or styling */}
             </div>
           }
           arrow
           enterDelay={0}
         >
-          <div className="status-bar-item">Nodes: 20</div>
+          <div className="status-bar-item">Nodes: {numNodes}</div>
         </Tooltip>
       </div>
       <div className="status-bar-right">

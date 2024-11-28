@@ -25,13 +25,13 @@ impl Engine {
 #[wasm_bindgen]
 impl Engine {
     #[wasm_bindgen(constructor)]
-    pub fn new(propagation_delay: u64, transmission_rate: u64) -> Self {
+    pub fn new() -> Self {
         Self {
             nodes: Vec::new(),
             cycle: 0,
             in_transit_packets: Vec::new(),
-            propagation_delay,
-            transmission_rate,
+            propagation_delay: 0,
+            transmission_rate: 0,
         }
     }
 
@@ -65,7 +65,8 @@ impl Engine {
     }
 
     #[wasm_bindgen]
-    pub fn step(&mut self) -> JsValue {
+    pub fn step(&mut self) {
+        self.cycle += 1;
         // println!("Cycle {}", self.cycle);
         // split the in_transit packets
         if !self.in_transit_packets.is_empty() {
@@ -98,8 +99,6 @@ impl Engine {
                 self.in_transit_packets.extend(packets);
             }
         }
-        self.cycle += 1;
-        self.get_state()
     }
 
     #[wasm_bindgen]
@@ -118,13 +117,13 @@ impl Engine {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EngineState {
     cycle: u64,
-    node_states: Vec<NodeState>,
+    nodes: Vec<NodeState>,
 }
 
 #[wasm_bindgen]
 impl EngineState {
-    pub fn new(cycle: u64, node_states: Vec<NodeState>) -> Self {
-        Self { cycle, node_states }
+    pub fn new(cycle: u64, nodes: Vec<NodeState>) -> Self {
+        Self { cycle, nodes }
     }
 
     #[wasm_bindgen(getter)]
@@ -133,8 +132,8 @@ impl EngineState {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn node_states(&self) -> Vec<NodeState> {
-        self.node_states.clone()
+    pub fn nodes(&self) -> Vec<NodeState> {
+        self.nodes.clone()
     }
 }
 
