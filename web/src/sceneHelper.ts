@@ -12,6 +12,7 @@ import {
   MultiMaterial,
   VertexData,
   Texture,
+  LinesMesh,
 } from "@babylonjs/core"
 
 export const createTriangleMarker = (
@@ -626,4 +627,119 @@ export const createSignalRippleTexture = (scene: Scene): StandardMaterial => {
   material.useAlphaFromDiffuseTexture = true
 
   return material
+}
+
+export const createFlyingLine = (
+  start: Vector3,
+  end: Vector3,
+  options: {
+    height?: number
+    scene: Scene
+  }
+) => {
+  const { height = 5, scene } = options
+
+  // Create control point for quadratic curve
+  const controlPoint = new Vector3((start.x + end.x) / 2, Math.max(start.y, end.y) + height, (start.z + end.z) / 2)
+
+  // Calculate points along the quadratic curve
+  const points: Vector3[] = []
+  const numPoints = 200
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints
+    const oneMinusT = 1 - t
+    points.push(
+      new Vector3(
+        oneMinusT * oneMinusT * start.x + 2 * oneMinusT * t * controlPoint.x + t * t * end.x,
+        oneMinusT * oneMinusT * start.y + 2 * oneMinusT * t * controlPoint.y + t * t * end.y,
+        oneMinusT * oneMinusT * start.z + 2 * oneMinusT * t * controlPoint.z + t * t * end.z
+      )
+    )
+  }
+
+  // Animation setup
+  let lastTime = performance.now()
+  const speed = 2 // Units per second
+  let offset = 0
+
+  // Create the line system
+  const lineSystem = new LinesMesh("dashedLine", scene)
+  lineSystem.color = new Color3(0.06, 0.95, 0.98)
+  lineSystem.alpha = 1
+  lineSystem.renderingGroupId = 1
+
+  // Fixed dash parameters
+  const dashLength = 0.2 // Fixed dash length in world units
+  const gapLength = 0.2 // Fixed gap length in world units
+  const patternLength = dashLength + gapLength
+
+  // Animation loop with fixed timestep
+  scene.onBeforeRenderObservable.add(() => {
+    const currentTime = performance.now()
+    const deltaTime = (currentTime - lastTime) / 1000 // Convert to seconds
+    lastTime = currentTime
+
+    // Update offset based on speed and time
+    offset = (offset + speed * deltaTime) % patternLength
+
+    let currentLength = -offset
+    const dashSegments: Vector3[][] = []
+    let currentSegment: Vector3[] = []
+
+    // Create dashes based on actual distance along curve
+    for (let i = 0; i < points.length - 1; i++) {
+      const segmentLength = Vector3.Distance(points[i], points[i + 1])
+      const segmentStart = currentLength
+      const segmentEnd = segmentStart + segmentLength
+
+      // Check if this segment should be part of a dash
+      const patternStart = Math.floor(segmentStart / patternLength) * patternLength
+      const patternEnd = Math.floor(segmentEnd / patternLength) * patternLength + dashLength
+
+      if (segmentStart < patternEnd && segmentEnd > patternStart) {
+        currentSegment.push(points[i])
+        if (currentSegment.length === 1) {
+          currentSegment.push(points[i + 1])
+        }
+      } else if (currentSegment.length > 0) {
+        dashSegments.push([...currentSegment])
+        currentSegment = []
+      }
+
+      currentLength += segmentLength
+    }
+
+    if (currentSegment.length > 0) {
+      dashSegments.push(currentSegment)
+    }
+
+    // Update the line system
+    const positions: number[] = []
+    const indices: number[] = []
+    let index = 0
+
+    dashSegments.forEach((segment) => {
+      segment.forEach((point) => {
+        positions.push(point.x, point.y, point.z)
+      })
+      for (let i = 0; i < segment.length - 1; i++) {
+        indices.push(index, index + 1)
+        index++
+      }
+      index++
+    })
+
+    const vertexData = new VertexData()
+    vertexData.positions = positions
+    vertexData.indices = indices
+    vertexData.applyToMesh(lineSystem, true)
+  })
+
+  return lineSystem
+}
+
+declare module "@babylonjs/core/Meshes/mesh" {
+  interface Mesh {
+    updateEndpoints?: (newStart: Vector3, newEnd: Vector3) => void
+  }
 }

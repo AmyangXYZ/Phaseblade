@@ -12,7 +12,7 @@ import {
   ExecuteCodeAction,
 } from "@babylonjs/core"
 import { useEffect, useRef } from "react"
-import { createRadarGround, createTacticalGround, createHexagon } from "./sceneHelper"
+import { createRadarGround, createTacticalGround, createHexagon, createFlyingLine } from "./sceneHelper"
 
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
 
@@ -85,6 +85,12 @@ function BjsScene({
 
     createRadarGround(31, scene)
     createTacticalGround(28, 9, 12, scene)
+
+    const src = new Vector3(0, 1, 0)
+    createFlyingLine(src, new Vector3(10, 1, 10), {
+      height: 5,
+      scene,
+    })
 
     scene.onPointerDown = (e) => {
       if (e.button === 0 || e.button === 2) {
