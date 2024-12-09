@@ -10,6 +10,7 @@ import {
   ShadowGenerator,
   ActionManager,
   ExecuteCodeAction,
+  Mesh,
 } from "@babylonjs/core"
 import { useEffect, useRef } from "react"
 import { createRadarGround, createTacticalGround, createHexagon, createFlyingLine } from "./sceneHelper"
@@ -42,6 +43,7 @@ function BjsScene({
   const cameraRef = useRef<ArcRotateCamera | null>(null)
   const shadowGeneratorRef = useRef<ShadowGenerator | null>(null)
   const selectedNodeRef = useRef<string | null>(null)
+  const nodesRef = useRef<Mesh[]>([])
 
   useEffect(() => {
     selectedNodeRef.current = selectedNode
@@ -121,6 +123,7 @@ function BjsScene({
         position: new Vector3(Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20),
         diameter: 2,
       })
+      nodesRef.current.push(node)
 
       shadowGeneratorRef.current?.addShadowCaster(node)
 
@@ -146,7 +149,7 @@ function BjsScene({
         })
       )
 
-      if (Math.random() < 0.3) {
+      if (Math.random() < 0.2) {
         node.showSignalRipple()
       }
 
@@ -156,10 +159,15 @@ function BjsScene({
         z: Math.random() * 0.2 - 0.1,
       }
 
-      createFlyingLine(node.position, new Vector3(0, 0, 0), {
-        height: 5,
-        scene,
-      })
+      if (nodesRef.current.length > 1 && (!unit.isStatic || Math.random() < 0.5)) {
+        const randomNode = nodesRef.current[Math.floor(Math.random() * nodesRef.current.length)]
+        if (randomNode !== node) {
+          createFlyingLine(node.position, randomNode.position, {
+            height: 5,
+            scene,
+          })
+        }
+      }
 
       if (!unit.isStatic) {
         let lastTime = performance.now()
