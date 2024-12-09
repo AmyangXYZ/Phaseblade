@@ -12,6 +12,12 @@
   -ms-user-select: none;
 }
 
+.speeddial-icon {
+  width: 24px;
+  height: 24px;
+  filter: invert(83%) sepia(93%) saturate(1000%) hue-rotate(155deg) brightness(102%) contrast(101%);
+}
+
 .glow {
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
   color: rgb(16, 241, 249);

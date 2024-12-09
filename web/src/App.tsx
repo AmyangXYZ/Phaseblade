@@ -26,6 +26,7 @@ function App() {
 
   const [newNode, setNewNode] = useState<{
     id: number
+    unit_type: string
     protocol: string
     cycle_per_tick: bigint
     cycle_offset: bigint
@@ -54,6 +55,7 @@ function App() {
 
   const addNode = (
     id: number,
+    unit_type: string,
     protocol: string,
     cycle_per_tick: bigint,
     cycle_offset: bigint,
@@ -62,12 +64,13 @@ function App() {
     workerRef.current?.postMessage({
       method: "add_node",
       id,
+      unit_type,
       protocol,
       cycle_per_tick,
       cycle_offset,
       micros_per_tick,
     })
-    setNewNode({ id, protocol, cycle_per_tick, cycle_offset, micros_per_tick })
+    setNewNode({ id, unit_type, protocol, cycle_per_tick, cycle_offset, micros_per_tick })
   }
 
   return (

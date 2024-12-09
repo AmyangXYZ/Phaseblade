@@ -29,6 +29,7 @@ function BjsScene({
 }: {
   newNode: {
     id: number
+    unit_type: string
     protocol: string
     cycle_per_tick: bigint
     cycle_offset: bigint
@@ -117,7 +118,7 @@ function BjsScene({
       const scene = sceneRef.current
       const camera = cameraRef.current
 
-      const unit = UnitTypes[Object.keys(UnitTypes)[Math.floor(Math.random() * Object.keys(UnitTypes).length)]]
+      const unit = UnitTypes[newNode.unit_type]
       const node = createHexagon(`${unit.type}-${newNode.id}`, scene, {
         svg: unit.icon,
         position: new Vector3(Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20),
