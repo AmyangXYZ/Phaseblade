@@ -86,12 +86,6 @@ function BjsScene({
     createRadarGround(31, scene)
     createTacticalGround(28, 9, 12, scene)
 
-    const src = new Vector3(0, 1, 0)
-    createFlyingLine(src, new Vector3(10, 1, 10), {
-      height: 5,
-      scene,
-    })
-
     scene.onPointerDown = (e) => {
       if (e.button === 0 || e.button === 2) {
         const pickResult = scene.pick(scene.pointerX, scene.pointerY)
@@ -161,6 +155,11 @@ function BjsScene({
         x: Math.random() * 0.2 - 0.1,
         z: Math.random() * 0.2 - 0.1,
       }
+
+      createFlyingLine(node.position, new Vector3(0, 0, 0), {
+        height: 5,
+        scene,
+      })
 
       if (!unit.isStatic) {
         let lastTime = performance.now()

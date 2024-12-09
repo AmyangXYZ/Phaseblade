@@ -639,28 +639,42 @@ export const createFlyingLine = (
 ) => {
   const { height = 5, scene } = options
 
-  // Create control point for quadratic curve
-  const controlPoint = new Vector3((start.x + end.x) / 2, Math.max(start.y, end.y) + height, (start.z + end.z) / 2)
+  // Fixed dash parameters (in world units)
+
+  const dashLength = 0.5
+  const gapLength = 0.5
+  const patternLength = dashLength + gapLength
+
+  // Animation setup with fixed timestep
+  let lastTime = performance.now()
+  const targetDelta = 1000 / 60 // 60fps in ms
+  const speed = 4 // Keep speed positive
+  let accumulator = 0
+  let offset = 0
 
   // Calculate points along the quadratic curve
-  const points: Vector3[] = []
-  const numPoints = 200
-  for (let i = 0; i <= numPoints; i++) {
-    const t = i / numPoints
-    const oneMinusT = 1 - t
-    points.push(
-      new Vector3(
-        oneMinusT * oneMinusT * start.x + 2 * oneMinusT * t * controlPoint.x + t * t * end.x,
-        oneMinusT * oneMinusT * start.y + 2 * oneMinusT * t * controlPoint.y + t * t * end.y,
-        oneMinusT * oneMinusT * start.z + 2 * oneMinusT * t * controlPoint.z + t * t * end.z
-      )
+  const calculatePoints = () => {
+    const currentControlPoint = new Vector3(
+      (start.x + end.x) / 2,
+      Math.max(start.y, end.y) + height,
+      (start.z + end.z) / 2
     )
-  }
 
-  // Animation setup
-  let lastTime = performance.now()
-  const speed = 2 // Units per second
-  let offset = 0
+    const points: Vector3[] = []
+    const numPoints = 200
+    for (let i = 0; i <= numPoints; i++) {
+      const t = i / numPoints
+      const oneMinusT = 1 - t
+      points.push(
+        new Vector3(
+          oneMinusT * oneMinusT * start.x + 2 * oneMinusT * t * currentControlPoint.x + t * t * end.x,
+          oneMinusT * oneMinusT * start.y + 2 * oneMinusT * t * currentControlPoint.y + t * t * end.y,
+          oneMinusT * oneMinusT * start.z + 2 * oneMinusT * t * currentControlPoint.z + t * t * end.z
+        )
+      )
+    }
+    return points
+  }
 
   // Create the line system
   const lineSystem = new LinesMesh("dashedLine", scene)
@@ -668,45 +682,46 @@ export const createFlyingLine = (
   lineSystem.alpha = 1
   lineSystem.renderingGroupId = 1
 
-  // Fixed dash parameters
-  const dashLength = 0.2 // Fixed dash length in world units
-  const gapLength = 0.2 // Fixed gap length in world units
-  const patternLength = dashLength + gapLength
-
   // Animation loop with fixed timestep
   scene.onBeforeRenderObservable.add(() => {
     const currentTime = performance.now()
-    const deltaTime = (currentTime - lastTime) / 1000 // Convert to seconds
+    const deltaTime = currentTime - lastTime
     lastTime = currentTime
+    accumulator += deltaTime
 
-    // Update offset based on speed and time
-    offset = (offset + speed * deltaTime) % patternLength
+    // Update animation offset
+    while (accumulator >= targetDelta) {
+      offset -= (speed * targetDelta) / 1000
+      accumulator -= targetDelta
+    }
 
-    let currentLength = -offset
+    // Recalculate points every frame to follow the source
+    const points = calculatePoints()
+
     const dashSegments: Vector3[][] = []
     let currentSegment: Vector3[] = []
+    let accumulatedLength = 0
 
-    // Create dashes based on actual distance along curve
+    // Calculate total length and create segments
     for (let i = 0; i < points.length - 1; i++) {
       const segmentLength = Vector3.Distance(points[i], points[i + 1])
-      const segmentStart = currentLength
-      const segmentEnd = segmentStart + segmentLength
+      const startLength = accumulatedLength
 
-      // Check if this segment should be part of a dash
-      const patternStart = Math.floor(segmentStart / patternLength) * patternLength
-      const patternEnd = Math.floor(segmentEnd / patternLength) * patternLength + dashLength
+      // Determine if this segment should be visible
+      const relativeStart = (((startLength + offset) % patternLength) + patternLength) % patternLength
+      const isInDash = relativeStart < dashLength
 
-      if (segmentStart < patternEnd && segmentEnd > patternStart) {
-        currentSegment.push(points[i])
-        if (currentSegment.length === 1) {
-          currentSegment.push(points[i + 1])
+      if (isInDash) {
+        if (currentSegment.length === 0) {
+          currentSegment.push(points[i])
         }
+        currentSegment.push(points[i + 1])
       } else if (currentSegment.length > 0) {
         dashSegments.push([...currentSegment])
         currentSegment = []
       }
 
-      currentLength += segmentLength
+      accumulatedLength = startLength + segmentLength
     }
 
     if (currentSegment.length > 0) {
@@ -740,6 +755,6 @@ export const createFlyingLine = (
 
 declare module "@babylonjs/core/Meshes/mesh" {
   interface Mesh {
-    updateEndpoints?: (newStart: Vector3, newEnd: Vector3) => void
+    updateEndpoints: (newStart: Vector3, newEnd: Vector3) => void
   }
 }
