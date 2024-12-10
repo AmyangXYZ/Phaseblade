@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import * as echarts from "echarts"
 import Card from "./components/Card"
-import { UnitTypes } from "./units"
+import { UnitTypes } from "./index.d.tsx"
 import { NodeState } from "phaseblade"
 
 function NodeCard({ selectedNode, nodeState }: { selectedNode: string | null; nodeState: NodeState | null }) {

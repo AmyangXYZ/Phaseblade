@@ -8,6 +8,7 @@ import { useRef } from "react"
 import { EngineState } from "phaseblade"
 import { createTheme, ThemeProvider } from "@mui/material/styles"
 import { CssBaseline } from "@mui/material"
+import { NodeMeta } from "./index.d"
 
 const darkTheme = createTheme({
   palette: {
@@ -24,14 +25,7 @@ function App() {
   const [engineState, setEngineState] = useState<EngineState>()
   const [cycle, setCycle] = useState<bigint>(0n)
 
-  const [newNode, setNewNode] = useState<{
-    id: number
-    unit_type: string
-    protocol: string
-    cycle_per_tick: bigint
-    cycle_offset: bigint
-    micros_per_tick: bigint
-  } | null>(null)
+  const [newNode, setNewNode] = useState<NodeMeta | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
 
   useEffect(() => {
@@ -40,9 +34,9 @@ function App() {
     })
 
     workerRef.current.onmessage = (e) => {
-      if (e.data.method === "state") {
-        setEngineState(e.data.state)
-        setCycle(e.data.state.cycle)
+      if (e.data.type === "state") {
+        setEngineState(e.data.data)
+        setCycle(e.data.data.cycle)
       }
     }
   }, [])
@@ -53,24 +47,12 @@ function App() {
     })
   }
 
-  const addNode = (
-    id: number,
-    unit_type: string,
-    protocol: string,
-    cycle_per_tick: bigint,
-    cycle_offset: bigint,
-    micros_per_tick: bigint
-  ) => {
+  const addNode = (node: NodeMeta) => {
     workerRef.current?.postMessage({
       method: "add_node",
-      id,
-      unit_type,
-      protocol,
-      cycle_per_tick,
-      cycle_offset,
-      micros_per_tick,
+      params: node,
     })
-    setNewNode({ id, unit_type, protocol, cycle_per_tick, cycle_offset, micros_per_tick })
+    setNewNode(node)
   }
 
   return (

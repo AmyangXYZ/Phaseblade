@@ -56,7 +56,7 @@ export interface InitOutput {
   readonly __wbg_enginestate_free: (a: number, b: number) => void;
   readonly enginestate_new: (a: number, b: number, c: number) => number;
   readonly enginestate_cycle: (a: number) => number;
-  readonly enginestate_nodes: (a: number, b: number) => void;
+  readonly enginestate_nodes: (a: number) => Array;
   readonly __wbg_nodestate_free: (a: number, b: number) => void;
   readonly nodestate_id: (a: number) => number;
   readonly nodestate_local_cycle: (a: number) => number;
@@ -65,8 +65,11 @@ export interface InitOutput {
   readonly nodestate_task_schedule: (a: number) => number;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __wbindgen_export_2: WebAssembly.Table;
+  readonly __externref_table_alloc: () => number;
+  readonly __externref_drop_slice: (a: number, b: number) => void;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+  readonly __wbindgen_start: () => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

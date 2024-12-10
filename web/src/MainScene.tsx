@@ -17,7 +17,7 @@ import { createRadarGround, createTacticalGround, createHexagon, createFlyingLin
 
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
 
-import { UnitTypes } from "./units"
+import { NodeMeta, UnitTypes } from "./index.d.tsx"
 
 import earcut from "earcut"
 window.earcut = earcut
@@ -27,14 +27,7 @@ function BjsScene({
   selectedNode,
   setSelectedNode,
 }: {
-  newNode: {
-    id: number
-    unit_type: string
-    protocol: string
-    cycle_per_tick: bigint
-    cycle_offset: bigint
-    micros_per_tick: bigint
-  } | null
+  newNode: NodeMeta | null
   selectedNode: string | null
   setSelectedNode: (node: string | null) => void
 }) {
@@ -121,7 +114,7 @@ function BjsScene({
       const unit = UnitTypes[newNode.unit_type]
       const node = createHexagon(`${unit.type}-${newNode.id}`, scene, {
         svg: unit.icon,
-        position: new Vector3(Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20),
+        position: new Vector3(newNode.position[0], newNode.position[1], newNode.position[2]),
         diameter: 2,
       })
       nodesRef.current.push(node)
@@ -160,7 +153,7 @@ function BjsScene({
         z: Math.random() * 0.2 - 0.1,
       }
 
-      if (nodesRef.current.length > 1 && (!unit.isStatic || Math.random() < 0.5)) {
+      if (nodesRef.current.length > 1 && Math.random() < 0.7) {
         const randomNode = nodesRef.current[Math.floor(Math.random() * nodesRef.current.length)]
         if (randomNode !== node) {
           createFlyingLine(node.position, randomNode.position, {

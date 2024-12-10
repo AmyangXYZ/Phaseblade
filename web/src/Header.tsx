@@ -1,21 +1,8 @@
-import Card from "./components/Card"
-import { Box, Button, SpeedDial, SpeedDialAction, SpeedDialIcon, Tooltip } from "@mui/material"
-import { UnitTypes } from "./units"
+import { Box, Fab, SpeedDial, SpeedDialAction, SpeedDialIcon, Tooltip } from "@mui/material"
+import { NodeMeta, UnitTypes } from "./index.d.tsx"
 import { NavigateNext } from "@mui/icons-material"
-function Header({
-  step,
-  addNode,
-}: {
-  step: () => void
-  addNode: (
-    id: number,
-    unit_type: string,
-    protocol: string,
-    cycle_per_tick: bigint,
-    cycle_offset: bigint,
-    range: bigint
-  ) => void
-}) {
+
+function Header({ step, addNode }: { step: () => void; addNode: (node: NodeMeta) => void }) {
   return (
     <div className="header">
       <a href="https://github.com/AmyangXYZ/Phaseblade" target="_blank">
@@ -23,32 +10,28 @@ function Header({
       </a>
 
       <div style={{ display: "flex", gap: "10px" }}>
-        <Card body={`Protocol: TSCH`} outlineColor="#858585" />
         <Tooltip title="Step">
-          <Button
+          <Fab
+            color="secondary"
+            aria-label="edit"
             onClick={step}
-            variant="contained"
             size="small"
-            sx={{
-              width: 48,
-              height: 36,
-              margin: "auto",
-              minWidth: "unset",
-            }}
+            sx={{ margin: "auto", width: 32, height: 32, minHeight: "unset" }}
           >
             <NavigateNext />
-          </Button>
+          </Fab>
         </Tooltip>
 
-        <Box sx={{ height: 36, margin: "auto", flexGrow: 1 }}>
+        <Box sx={{ height: 32, margin: "auto", flexGrow: 1 }}>
           <SpeedDial
             ariaLabel="SpeedDial"
             direction="down"
             sx={{
               "& .MuiFab-root": {
                 margin: "auto",
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
+
                 minHeight: "unset",
               },
             }}
@@ -66,7 +49,17 @@ function Header({
                 key={unit.label}
                 icon={unit.speeddial_icon}
                 tooltipTitle={unit.label}
-                onClick={() => addNode(Math.floor(Math.random() * 1000), unit.type, "TSCH", 10n, 0n, 10n)}
+                onClick={() =>
+                  addNode({
+                    id: Math.floor(Math.random() * 1000),
+                    unit_type: unit.type,
+                    protocol: "TSCH",
+                    position: [Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20],
+                    cycle_per_tick: 10n,
+                    cycle_offset: 0n,
+                    micros_per_tick: 10n,
+                  } as NodeMeta)
+                }
               />
             ))}
           </SpeedDial>
