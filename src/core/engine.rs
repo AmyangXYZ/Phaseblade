@@ -1,5 +1,5 @@
-use crate::core::{Node, Packet};
-use crate::tsch::TschNode;
+use crate::core::{NodeRuntime, Packet};
+use crate::tasks::TschNode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Instant;
@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 /// Manages network simulation by executing nodes and propagating packets between them
 #[wasm_bindgen]
 pub struct Engine {
-    nodes: Vec<Box<dyn Node>>,
+    nodes: Vec<Box<dyn NodeRuntime>>,
     cycle: u64, // CPU cycle counter, e.g., a cycle represents 10ns @ 100MHz CPU frequency
     propagation_delay: u64,
     transmission_rate: u64,
@@ -17,7 +17,7 @@ pub struct Engine {
 
 impl Engine {
     // non-wasm api
-    pub fn add_node(&mut self, node: Box<dyn Node>) {
+    pub fn add_node(&mut self, node: Box<dyn NodeRuntime>) {
         self.nodes.push(node);
     }
 }

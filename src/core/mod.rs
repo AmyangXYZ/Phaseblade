@@ -6,6 +6,6 @@ mod task;
 
 pub use engine::Engine;
 pub use message::{Mailbox, Message};
-pub use node::Node;
+pub use node::{NodeRuntime, NodeState};
 pub use packet::Packet;
 pub use task::Task;
