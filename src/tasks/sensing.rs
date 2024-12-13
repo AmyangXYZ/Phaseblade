@@ -1,27 +1,29 @@
-use crate::core::{Mailbox, Message, NodeContext, Task};
+use crate::message::{Mailbox, Message};
+use crate::node::NodeContext;
+use crate::task::Task;
 
-pub struct SensorTask {
-    id: u16,
+pub struct SensingTask {
+    id: u8,
     name: String,
     priority: u8,
     execution_cycles: u64,
     mailbox: Mailbox,
 }
 
-impl SensorTask {
-    pub fn new(id: u16, name: &str, priority: u8) -> Self {
-        SensorTask {
+impl SensingTask {
+    pub fn new(id: u8, name: &str, priority: u8) -> Self {
+        SensingTask {
             id,
             name: name.to_string(),
             priority,
-            execution_cycles: 0,
+            execution_cycles: 5,
             mailbox: Mailbox::new(),
         }
     }
 }
 
-impl Task for SensorTask {
-    fn id(&self) -> u16 {
+impl Task for SensingTask {
+    fn id(&self) -> u8 {
         self.id
     }
 
@@ -33,15 +35,19 @@ impl Task for SensorTask {
         self.priority
     }
 
-    fn post_message(&mut self, msg: Box<dyn Message>) {
+    fn post(&mut self, msg: Box<dyn Message>) {
         self.mailbox.post(msg);
+    }
+
+    fn execution_cycles(&self) -> u64 {
+        self.execution_cycles
     }
 
     fn execute(&mut self, context: &NodeContext) -> Vec<Box<dyn Message>> {
         self.execution_cycles -= 1;
         if self.execution_cycles == 0 {
             println!(
-                "SensorTask {} done at clock {:.3}",
+                "SensingTask {} done at clock {:.3}",
                 self.id, context.local_time
             );
         }

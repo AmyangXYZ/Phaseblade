@@ -1,3 +1,3 @@
-mod sensor;
+mod sensing;
 
-pub use sensor::SensorTask;
+pub use sensing::SensingTask;

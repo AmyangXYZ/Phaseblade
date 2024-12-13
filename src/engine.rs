@@ -1,4 +1,5 @@
-use crate::core::{Node, Packet};
+use crate::node::Node;
+use crate::packet::Packet;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use wasm_bindgen::prelude::*;
@@ -35,17 +36,18 @@ impl Engine {
     pub fn add_node(
         &mut self,
         id: u16,
-        cycles_per_tick: u64,
+        position: Vec<f64>,
+        cpu_freq_hz: u64,
+        tick_interval: u64,
         cycle_offset: u64,
-        micros_per_tick: u64,
         drift_factor: f64,
     ) {
         let node = Node::new(
             id,
-            Vec::new(),
-            cycles_per_tick,
+            position,
+            cpu_freq_hz,
+            tick_interval,
             cycle_offset,
-            micros_per_tick,
             drift_factor,
         );
         self.nodes.push(node);

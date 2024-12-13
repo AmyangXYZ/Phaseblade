@@ -1,4 +1,4 @@
-use crate::core::Packet;
+use crate::packet::Packet;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
@@ -13,11 +13,6 @@ pub trait Message {
     fn get_packet(&self) -> Option<Box<dyn Packet>> {
         None
     }
-}
-
-// Priority queue wrapper for messages
-pub struct Mailbox {
-    messages: BinaryHeap<Box<dyn Message>>,
 }
 
 impl PartialEq for Box<dyn Message> {
@@ -38,6 +33,11 @@ impl Ord for Box<dyn Message> {
     fn cmp(&self, other: &Self) -> Ordering {
         other.get_priority().cmp(&self.get_priority()) // Higher priority first
     }
+}
+
+// Priority queue wrapper for messages
+pub struct Mailbox {
+    messages: BinaryHeap<Box<dyn Message>>,
 }
 
 impl Mailbox {
