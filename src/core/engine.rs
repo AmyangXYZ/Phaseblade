@@ -1,25 +1,16 @@
-use crate::core::{NodeRuntime, Packet};
-use crate::tasks::TschNode;
+use crate::core::{Node, Packet};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::time::Instant;
 use wasm_bindgen::prelude::*;
 
 /// Manages network simulation by executing nodes and propagating packets between them
 #[wasm_bindgen]
 pub struct Engine {
-    nodes: Vec<Box<dyn NodeRuntime>>,
+    nodes: Vec<Node>,
     cycle: u64, // CPU cycle counter, e.g., a cycle represents 10ns @ 100MHz CPU frequency
     propagation_delay: u64,
     transmission_rate: u64,
     in_transit_packets: Vec<Box<dyn Packet>>,
-}
-
-impl Engine {
-    // non-wasm api
-    pub fn add_node(&mut self, node: Box<dyn NodeRuntime>) {
-        self.nodes.push(node);
-    }
 }
 
 #[wasm_bindgen]
@@ -36,32 +27,28 @@ impl Engine {
     }
 
     #[wasm_bindgen(js_name = getState)]
-    pub fn get_state(&self) -> JsValue {
-        let node_states: Vec<NodeState> = self
-            .nodes
-            .iter()
-            .map(|n| NodeState {
-                id: n.get_id(),
-                local_cycle: n.get_local_cycle(),
-                local_time: n.get_local_time(),
-                task_names: n.get_task_names(),
-                task_schedule: n.get_task_schedule(),
-            })
-            .collect();
-
-        serde_wasm_bindgen::to_value(&EngineState::new(self.cycle, node_states)).unwrap()
+    pub fn state(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(&EngineState::new(self.cycle)).unwrap()
     }
 
-    #[wasm_bindgen(js_name = addTschNode)]
-    pub fn add_tsch_node(
+    #[wasm_bindgen(js_name = addNode)]
+    pub fn add_node(
         &mut self,
         id: u16,
         cycles_per_tick: u64,
         cycle_offset: u64,
         micros_per_tick: u64,
+        drift_factor: f64,
     ) {
-        let node = TschNode::new(id, cycles_per_tick, cycle_offset, micros_per_tick);
-        self.add_node(Box::new(node));
+        let node = Node::new(
+            id,
+            Vec::new(),
+            cycles_per_tick,
+            cycle_offset,
+            micros_per_tick,
+            drift_factor,
+        );
+        self.nodes.push(node);
     }
 
     #[wasm_bindgen]
@@ -81,15 +68,14 @@ impl Engine {
             // Deliver packets
             for packet in delivering {
                 if let Some(node) = self.nodes.get_mut(packet.get_dst() as usize) {
-                    node.accept_packet(packet);
+                    node.post(packet);
                 }
             }
         }
 
         // Execute nodes and collect new packets
         for node in self.nodes.iter_mut() {
-            node.execute(self.cycle);
-            let mut packets = node.collect_packets();
+            let mut packets = node.execute(self.cycle);
             if !packets.is_empty() {
                 for packet in packets.iter_mut() {
                     let transmission_time = packet.get_size() / self.transmission_rate;
@@ -117,60 +103,16 @@ impl Engine {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EngineState {
     cycle: u64,
-    nodes: Vec<NodeState>,
 }
 
 #[wasm_bindgen]
 impl EngineState {
-    pub fn new(cycle: u64, nodes: Vec<NodeState>) -> Self {
-        Self { cycle, nodes }
+    pub fn new(cycle: u64) -> Self {
+        Self { cycle }
     }
 
     #[wasm_bindgen(getter)]
     pub fn cycle(&self) -> u64 {
         self.cycle
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn nodes(&self) -> Vec<NodeState> {
-        self.nodes.clone()
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct NodeState {
-    id: u16,
-    local_cycle: u64,
-    local_time: f64,
-    task_names: HashMap<u16, String>,
-    task_schedule: Vec<u16>,
-}
-
-#[wasm_bindgen]
-impl NodeState {
-    #[wasm_bindgen(getter)]
-    pub fn id(&self) -> u16 {
-        self.id
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn local_cycle(&self) -> u64 {
-        self.local_cycle
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn local_time(&self) -> f64 {
-        self.local_time
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn task_names(&self) -> JsValue {
-        serde_wasm_bindgen::to_value(&self.task_names).unwrap()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn task_schedule(&self) -> JsValue {
-        serde_wasm_bindgen::to_value(&self.task_schedule).unwrap()
     }
 }
