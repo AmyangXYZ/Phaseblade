@@ -72,12 +72,13 @@ impl Node {
     // fixed priority scheduling for ready tasks
     pub fn schedule(&mut self) {
         self.task_schedule.clear();
-        let mut ready_tasks = self
-            .tasks
-            .values()
-            .filter(|task| task.execution_cycles() > 0)
-            .map(|task| (task.id(), task.priority(), task.execution_cycles()))
-            .collect::<Vec<_>>();
+        let mut ready_tasks = Vec::new();
+
+        for task in self.tasks.values_mut() {
+            if task.is_ready(&self.context) {
+                ready_tasks.push((task.id(), task.priority(), task.execution_cycles()));
+            }
+        }
 
         ready_tasks.sort_by(|a, b| a.1.cmp(&b.1));
 
@@ -100,14 +101,16 @@ impl Node {
     }
 
     pub fn execute(&mut self, cycle: u64) -> Vec<Box<dyn Packet>> {
-        if cycle < self.cycle_offset {
+        self.context.local_cycle = if cycle > self.cycle_offset {
+            cycle - self.cycle_offset
+        } else {
+            0
+        };
+        if self.context.local_cycle == 0 {
             return Vec::new();
         }
-
-        self.context.local_cycle = cycle - self.cycle_offset;
         self.context.local_time =
-            (cycle as f64 / self.cpu_freq_hz as f64) * (1.0 + self.clock_drift_factor);
-
+            100.0 + (cycle as f64 / self.cpu_freq_hz as f64) * (1.0 + self.clock_drift_factor);
         // new tick
         if (self.context.local_cycle - 1) % self.tick_interval == 0 {
             self.schedule();

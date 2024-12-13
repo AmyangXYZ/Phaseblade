@@ -7,6 +7,7 @@ pub trait Task {
     fn name(&self) -> String;
     fn priority(&self) -> u8;
     fn execution_cycles(&self) -> u64;
-    fn post(&mut self, msg: Box<dyn Message>);
+    fn is_ready(&mut self, context: &NodeContext) -> bool;
     fn execute(&mut self, context: &NodeContext) -> Vec<Box<dyn Message>>;
+    fn post(&mut self, msg: Box<dyn Message>);
 }

@@ -35,22 +35,31 @@ impl Task for SensingTask {
         self.priority
     }
 
-    fn post(&mut self, msg: Box<dyn Message>) {
-        self.mailbox.post(msg);
-    }
-
     fn execution_cycles(&self) -> u64 {
         self.execution_cycles
+    }
+
+    fn is_ready(&mut self, context: &NodeContext) -> bool {
+        if context.local_time % 100.0 < 1.0 {
+            self.execution_cycles = 5;
+            true
+        } else {
+            false
+        }
     }
 
     fn execute(&mut self, context: &NodeContext) -> Vec<Box<dyn Message>> {
         self.execution_cycles -= 1;
         if self.execution_cycles == 0 {
             println!(
-                "SensingTask {} done at clock {:.3}",
+                "SensingTask {} done at clock {:?}",
                 self.id, context.local_time
             );
         }
         vec![]
+    }
+
+    fn post(&mut self, msg: Box<dyn Message>) {
+        self.mailbox.post(msg);
     }
 }
