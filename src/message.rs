@@ -1,23 +1,18 @@
-use crate::packet::Packet;
+use std::any::Any;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-/// Represents a message that can be exchanged between tasks
-pub trait Message {
-    fn get_src_task(&self) -> u16;
-    fn get_dst_task(&self) -> u16;
-    fn get_priority(&self) -> u8;
-    fn has_packet(&self) -> bool {
-        false
-    }
-    fn get_packet(&self) -> Option<Box<dyn Packet>> {
-        None
-    }
+/// Represents a message that can be exchanged between tasks within a node
+pub trait Message: Any {
+    fn src(&self) -> u8;
+    fn dst(&self) -> u8;
+    fn priority(&self) -> u8;
+    fn as_any(&self) -> &dyn Any;
 }
 
 impl PartialEq for Box<dyn Message> {
     fn eq(&self, other: &Self) -> bool {
-        self.get_priority() == other.get_priority()
+        self.priority() == other.priority()
     }
 }
 
@@ -31,7 +26,7 @@ impl PartialOrd for Box<dyn Message> {
 
 impl Ord for Box<dyn Message> {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.get_priority().cmp(&self.get_priority()) // Higher priority first
+        self.priority().cmp(&other.priority()) // Higher priority first
     }
 }
 

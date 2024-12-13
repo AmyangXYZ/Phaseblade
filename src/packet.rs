@@ -1,8 +1,8 @@
-pub trait Packet {
-    fn get_id(&self) -> u64;
-    fn get_src(&self) -> u16;
-    fn get_dst(&self) -> u16;
-    fn get_size(&self) -> u64;
-    fn set_arrival_time(&mut self, arrival_time: u64);
-    fn get_arrival_time(&self) -> u64;
+use std::any::Any;
+pub trait Packet: Any {
+    fn id(&self) -> u64;
+    fn src(&self) -> u16;
+    fn dst(&self) -> u16;
+    fn size(&self) -> u64;
+    fn as_any(&self) -> &dyn Any;
 }

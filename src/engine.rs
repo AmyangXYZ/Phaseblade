@@ -1,7 +1,7 @@
 use crate::node::Node;
 use crate::packet::Packet;
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 use wasm_bindgen::prelude::*;
 
 /// Manages network simulation by executing nodes and propagating packets between them
@@ -11,7 +11,7 @@ pub struct Engine {
     cycle: u64, // CPU cycle counter, e.g., a cycle represents 10ns @ 100MHz CPU frequency
     propagation_delay: u64,
     transmission_rate: u64,
-    in_transit_packets: Vec<Box<dyn Packet>>,
+    in_transit_packets: HashMap<u64, Vec<Box<dyn Packet>>>,
 }
 
 #[wasm_bindgen]
@@ -21,7 +21,7 @@ impl Engine {
         Self {
             nodes: Vec::new(),
             cycle: 0,
-            in_transit_packets: Vec::new(),
+            in_transit_packets: HashMap::new(),
             propagation_delay: 0,
             transmission_rate: 0,
         }
@@ -57,19 +57,10 @@ impl Engine {
     pub fn step(&mut self) {
         self.cycle += 1;
         // println!("Cycle {}", self.cycle);
-        // split the in_transit packets
-        if !self.in_transit_packets.is_empty() {
-            let (in_transit, delivering): (Vec<_>, Vec<_>) = self
-                .in_transit_packets
-                .drain(..)
-                .partition(|p| p.get_arrival_time() != self.cycle);
-
-            // Keep the in_transit packets
-            self.in_transit_packets = in_transit;
-
+        if let Some(packets) = self.in_transit_packets.remove(&self.cycle) {
             // Deliver packets
-            for packet in delivering {
-                if let Some(node) = self.nodes.get_mut(packet.get_dst() as usize) {
+            for packet in packets {
+                if let Some(node) = self.nodes.get_mut(packet.dst() as usize) {
                     node.post(packet);
                 }
             }
@@ -77,14 +68,15 @@ impl Engine {
 
         // Execute nodes and collect new packets
         for node in self.nodes.iter_mut() {
-            let mut packets = node.execute(self.cycle);
-            if !packets.is_empty() {
-                for packet in packets.iter_mut() {
-                    let transmission_time = packet.get_size() / self.transmission_rate;
-                    packet
-                        .set_arrival_time(self.cycle + self.propagation_delay + transmission_time);
+            let result = node.execute(self.cycle);
+            if !result.packets.is_empty() {
+                for packet in result.packets {
+                    let transmission_time = packet.size() / self.transmission_rate;
+                    self.in_transit_packets
+                        .entry(self.cycle + self.propagation_delay + transmission_time)
+                        .or_insert(vec![])
+                        .push(packet);
                 }
-                self.in_transit_packets.extend(packets);
             }
         }
     }
@@ -98,6 +90,12 @@ impl Engine {
         }
 
         println!("Simulated {} cycles in {:?}", self.cycle, start.elapsed());
+    }
+
+    #[wasm_bindgen(js_name = availableTasks)]
+    pub fn available_tasks(&self) -> JsValue {
+        let tasks = ["Sensing", "Broadcast", "Association", "TSCH"];
+        serde_wasm_bindgen::to_value(&tasks).unwrap()
     }
 }
 

@@ -1,18 +1,33 @@
 use crate::packet::Packet;
-use crate::task::Task;
+use crate::task::{Task, TaskStatus};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use wasm_bindgen::prelude::*;
 
 // Node state for frontend visualization
 #[wasm_bindgen]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NodeState {
     pub id: u16,
     #[wasm_bindgen(skip)]
     pub position: Vec<f64>,
     pub local_cycle: u64,
     pub local_time: f64,
+    #[wasm_bindgen(skip)]
+    pub task_schedule: Vec<String>,
+}
+
+#[wasm_bindgen]
+impl NodeState {
+    #[wasm_bindgen(getter)]
+    pub fn position(&self) -> Vec<f64> {
+        self.position.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn task_schedule(&self) -> Vec<String> {
+        self.task_schedule.clone()
+    }
 }
 
 // Node context needed for task execution
@@ -33,8 +48,8 @@ pub struct Node {
     cycle_offset: u64,
     clock_drift_factor: f64,
     context: NodeContext,
-    task_schedule: Vec<u8>,
     tasks: HashMap<u8, Box<dyn Task>>,
+    task_schedule: Vec<u8>,
 }
 
 impl Node {
@@ -75,8 +90,9 @@ impl Node {
         let mut ready_tasks = Vec::new();
 
         for task in self.tasks.values_mut() {
-            if task.is_ready(&self.context) {
-                ready_tasks.push((task.id(), task.priority(), task.execution_cycles()));
+            let state = task.state(&self.context);
+            if state.status != TaskStatus::Blocked {
+                ready_tasks.push((task.id(), task.priority(), state.remaining_cycles));
             }
         }
 
@@ -96,37 +112,44 @@ impl Node {
         for _ in 0..(self.tick_interval - current_cycle) {
             self.task_schedule.push(u8::MAX);
         }
-
-        println!("Task schedule: {:?}", self.task_schedule);
     }
 
-    pub fn execute(&mut self, cycle: u64) -> Vec<Box<dyn Packet>> {
+    pub fn execute(&mut self, cycle: u64) -> NodeExecResult {
         self.context.local_cycle = if cycle > self.cycle_offset {
             cycle - self.cycle_offset
         } else {
             0
         };
         if self.context.local_cycle == 0 {
-            return Vec::new();
+            return NodeExecResult {
+                packets: Vec::new(),
+            };
         }
         self.context.local_time =
             100.0 + (cycle as f64 / self.cpu_freq_hz as f64) * (1.0 + self.clock_drift_factor);
-        // new tick
+
         if (self.context.local_cycle - 1) % self.tick_interval == 0 {
             self.schedule();
         }
 
-        // execute task
         if let Some(task_id) = self
             .task_schedule
             .get(((self.context.local_cycle - 1) % self.tick_interval) as usize)
         {
             if let Some(task) = self.tasks.get_mut(task_id) {
-                task.execute(&self.context);
+                let result = task.execute(&self.context);
+                for msg in result.messages {
+                    if let Some(dst_task) = self.tasks.get_mut(&msg.dst()) {
+                        println!("task {} sent message to task {}", task_id, dst_task.id());
+                        dst_task.post(msg);
+                    }
+                }
             }
         }
 
-        Vec::new()
+        NodeExecResult {
+            packets: Vec::new(),
+        }
     }
 
     pub fn post(&mut self, packet: Box<dyn Packet>) {
@@ -139,6 +162,21 @@ impl Node {
             position: self.context.position.clone(),
             local_cycle: self.context.local_cycle,
             local_time: self.context.local_time,
+            task_schedule: self
+                .task_schedule
+                .iter()
+                .map(|id| {
+                    if *id == u8::MAX {
+                        "Idle".to_string()
+                    } else {
+                        self.tasks.get(id).unwrap().name()
+                    }
+                })
+                .collect(),
         }
     }
+}
+
+pub struct NodeExecResult {
+    pub packets: Vec<Box<dyn Packet>>,
 }
