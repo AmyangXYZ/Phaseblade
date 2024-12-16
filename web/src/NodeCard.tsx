@@ -4,7 +4,7 @@ import Card from "./components/Card"
 import { UnitTypes } from "./index.d.tsx"
 import { NodeState } from "phaseblade"
 
-function NodeCard({ selectedNode, nodeState }: { selectedNode: string | null; nodeState: NodeState | null }) {
+function NodeCard({ selectedNode, nodeState }: { selectedNode: number | null; nodeState: NodeState | null }) {
   const taskScheduleChartRef = useRef<echarts.EChartsType | null>(null)
   const taskScheduleChartDomRef = useRef<HTMLDivElement>(null)
   const [taskSchedule, setTaskSchedule] = useState<{ name: string; value: number }[]>([])
@@ -124,8 +124,8 @@ function NodeCard({ selectedNode, nodeState }: { selectedNode: string | null; no
       {selectedNode && nodeState && (
         <>
           <Card
-            title={`${UnitTypes[selectedNode.split("-")[0]].label} - ${nodeState.id}`}
-            icon={<img src={UnitTypes[selectedNode.split("-")[0]].icon} />}
+            title={`${UnitTypes[nodeState.unit_type].label} - ${nodeState.id}`}
+            icon={<img src={UnitTypes[nodeState.unit_type].icon} />}
             subtitle="RETRIEVE VALUABLE DATA"
             body={
               <>

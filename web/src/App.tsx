@@ -25,8 +25,7 @@ function App() {
   const [engineState, setEngineState] = useState<EngineState>()
   const [cycle, setCycle] = useState<bigint>(0n)
 
-  const [newNode, setNewNode] = useState<NodeConfigJS | null>(null)
-  const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [selectedNode, setSelectedNode] = useState<number | null>(null)
 
   useEffect(() => {
     workerRef.current = new Worker(new URL("./pbWorker.ts", import.meta.url), {
@@ -52,19 +51,16 @@ function App() {
       method: "add_node",
       params: node,
     })
-    setNewNode(node)
   }
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Header step={step} addNode={addNode} />
-      <MainScene newNode={newNode} selectedNode={selectedNode} setSelectedNode={setSelectedNode} />
+      <MainScene selectedNode={selectedNode} setSelectedNode={setSelectedNode} nodes={engineState?.nodes || []} />
       <NodeCard
         selectedNode={selectedNode}
-        nodeState={
-          engineState?.nodes.find((node: NodeState) => node.id === Number(selectedNode?.split("-")[1])) || null
-        }
+        nodeState={engineState?.nodes.find((node: NodeState) => node.id === selectedNode) || null}
       />
       <StatusBar cycle={cycle} numNodes={engineState?.nodes.length || 0} />
     </ThemeProvider>

@@ -11,6 +11,8 @@ pub struct NodeConfig {
     pub id: u16,
     #[wasm_bindgen(skip)]
     pub position: Vec<f64>,
+    #[wasm_bindgen(skip)]
+    pub unit_type: String,
     pub cpu_freq_hz: u64,
     pub tick_interval: u64,
     pub cycle_offset: u64,
@@ -25,6 +27,7 @@ impl NodeConfig {
     pub fn new(
         id: u16,
         position: Vec<f64>,
+        unit_type: String,
         cpu_freq_hz: u64,
         tick_interval: u64,
         cycle_offset: u64,
@@ -34,17 +37,13 @@ impl NodeConfig {
         Self {
             id,
             position,
+            unit_type,
             cpu_freq_hz,
             tick_interval,
             cycle_offset,
             clock_drift_factor,
             tasks,
         }
-    }
-
-    #[wasm_bindgen(js_name = toJs)]
-    pub fn to_js(&self) -> JsValue {
-        serde_wasm_bindgen::to_value(self).unwrap()
     }
 }
 
@@ -55,6 +54,8 @@ pub struct NodeState {
     pub id: u16,
     #[wasm_bindgen(skip)]
     pub position: Vec<f64>,
+    #[wasm_bindgen(skip)]
+    pub unit_type: String,
     pub local_cycle: u64,
     pub local_time: f64,
     #[wasm_bindgen(skip)]
@@ -69,6 +70,11 @@ impl NodeState {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn unit_type(&self) -> String {
+        self.unit_type.clone()
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn task_schedule(&self) -> Vec<String> {
         self.task_schedule.clone()
     }
@@ -78,6 +84,7 @@ impl NodeState {
 pub struct NodeContext {
     pub id: u16,
     pub position: Vec<f64>,
+    pub unit_type: String,
     pub local_cycle: u64,
     pub local_time: f64,
     pub tx_queue: VecDeque<Box<dyn Packet>>,
@@ -102,6 +109,7 @@ impl Node {
             context: NodeContext {
                 id: config.id,
                 position: config.position,
+                unit_type: config.unit_type.clone(),
                 local_cycle: 0,
                 local_time: 0.0,
                 tx_queue: VecDeque::new(),
@@ -214,6 +222,7 @@ impl Node {
         NodeState {
             id: self.context.id,
             position: self.context.position.clone(),
+            unit_type: self.context.unit_type.clone(),
             local_cycle: self.context.local_cycle,
             local_time: self.context.local_time,
             task_schedule: self

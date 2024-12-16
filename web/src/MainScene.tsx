@@ -17,27 +17,28 @@ import { createRadarGround, createTacticalGround, createHexagon, createFlyingLin
 
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
 
-import { NodeConfigJS, UnitTypes } from "./index.d.tsx"
+import { UnitTypes } from "./index.d.tsx"
 
 import earcut from "earcut"
+import { NodeState } from "phaseblade"
 window.earcut = earcut
 
 function BjsScene({
-  newNode,
+  nodes,
   selectedNode,
   setSelectedNode,
 }: {
-  newNode: NodeConfigJS | null
-  selectedNode: string | null
-  setSelectedNode: (node: string | null) => void
+  nodes: NodeState[]
+  selectedNode: number | null
+  setSelectedNode: (node: number | null) => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bjsEngineRef = useRef<Engine | null>(null)
   const sceneRef = useRef<Scene | null>(null)
   const cameraRef = useRef<ArcRotateCamera | null>(null)
   const shadowGeneratorRef = useRef<ShadowGenerator | null>(null)
-  const selectedNodeRef = useRef<string | null>(null)
-  const nodesRef = useRef<Mesh[]>([])
+  const selectedNodeRef = useRef<number | null>(null)
+  const nodesRef = useRef<{ [id: number]: Mesh }>({})
 
   useEffect(() => {
     selectedNodeRef.current = selectedNode
@@ -107,104 +108,110 @@ function BjsScene({
   }, [setSelectedNode])
 
   useEffect(() => {
-    if (newNode && sceneRef.current && cameraRef.current) {
+    if (nodes && sceneRef.current && cameraRef.current) {
       const scene = sceneRef.current
       const camera = cameraRef.current
 
-      const unit = UnitTypes[newNode.unit_type]
-      const node = createHexagon(`${unit.type}-${newNode.id}`, scene, {
-        svg: unit.icon,
-        position: new Vector3(newNode.position[0], newNode.position[1], newNode.position[2]),
-        diameter: 2,
-      })
-      nodesRef.current.push(node)
-
-      shadowGeneratorRef.current?.addShadowCaster(node)
-
-      node.actionManager = new ActionManager(scene)
-      node.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
-          if (selectedNodeRef.current === node.name) {
-            node.hideSelection()
-            return
-          }
-
-          scene.meshes.forEach((mesh) => {
-            if (mesh.hideSelection && mesh !== node) {
-              mesh.hideSelection()
-            }
-          })
-          node.showSelection()
-
-          if (selectedNodeRef.current !== node.name) {
-            camera.spinTo(node.position.clone().add(new Vector3(0, 24, -12)), node.position.clone(), 500)
-            setSelectedNode(node.name)
-          }
-        })
-      )
-
-      if (Math.random() < 0.2) {
-        node.showSignalRipple()
-      }
-
-      let time = 0
-      let randomOffset = {
-        x: Math.random() * 0.2 - 0.1,
-        z: Math.random() * 0.2 - 0.1,
-      }
-
-      if (nodesRef.current.length > 1 && Math.random() < 0.7) {
-        const randomNode = nodesRef.current[Math.floor(Math.random() * nodesRef.current.length)]
-        if (randomNode !== node) {
-          createFlyingLine(node.position, randomNode.position, {
-            height: 5,
-            scene,
-          })
+      nodes.forEach((node) => {
+        if (nodesRef.current[node.id]) {
+          return
         }
-      }
+        const unit = UnitTypes[node.unit_type]
+        const nodeMesh = createHexagon(`${unit.type}-${node.id}`, scene, {
+          svg: unit.icon,
+          position: new Vector3(node.position[0], node.position[1], node.position[2]),
+          diameter: 2,
+        })
+        nodesRef.current[node.id] = nodeMesh
 
-      if (!unit.isStatic) {
-        let lastTime = performance.now()
-        const targetDelta = 1000 / 60
-        let accumulator = 0
+        shadowGeneratorRef.current?.addShadowCaster(nodeMesh)
 
-        const animate = (currentTime: number) => {
-          const deltaTime = currentTime - lastTime
-          accumulator += deltaTime
-
-          // Update position only when enough time has accumulated
-          while (accumulator >= targetDelta) {
-            time += 0.002
-
-            // Calculate new position
-            const newX = node.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
-            const newZ = node.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
-
-            // Check boundaries
-            const maxRadius = 25
-            const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
-
-            if (distanceFromCenter < maxRadius) {
-              node.position.x = newX
-              node.position.z = newZ
-            } else {
-              randomOffset = {
-                x: Math.random() * 0.2 - 0.1,
-                z: Math.random() * 0.2 - 0.1,
-              }
+        nodeMesh.actionManager = new ActionManager(scene)
+        nodeMesh.actionManager.registerAction(
+          new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
+            if (selectedNodeRef.current === node.id) {
+              nodeMesh.hideSelection()
+              return
             }
 
-            accumulator -= targetDelta
+            scene.meshes.forEach((mesh) => {
+              if (mesh.hideSelection && mesh !== nodeMesh) {
+                mesh.hideSelection()
+              }
+            })
+            nodeMesh.showSelection()
+
+            if (selectedNodeRef.current !== node.id) {
+              camera.spinTo(nodeMesh.position.clone().add(new Vector3(0, 24, -12)), nodeMesh.position.clone(), 500)
+              setSelectedNode(node.id)
+            }
+          })
+        )
+
+        if (Math.random() < 0.2) {
+          nodeMesh.showSignalRipple()
+        }
+
+        let time = 0
+        let randomOffset = {
+          x: Math.random() * 0.2 - 0.1,
+          z: Math.random() * 0.2 - 0.1,
+        }
+
+        if (Object.keys(nodesRef.current).length > 1 && Math.random() < 0.7) {
+          const nodeIds = Object.keys(nodesRef.current)
+          const randomNode = nodesRef.current[nodeIds[Math.floor(Math.random() * nodeIds.length)] as unknown as number]
+          if (randomNode && randomNode !== nodeMesh) {
+            createFlyingLine(nodeMesh.position, randomNode.position, {
+              height: 5,
+              scene,
+            })
+          }
+        }
+
+        if (!unit.isStatic) {
+          let lastTime = performance.now()
+          const targetDelta = 1000 / 60
+          let accumulator = 0
+
+          const animate = (currentTime: number) => {
+            const deltaTime = currentTime - lastTime
+            accumulator += deltaTime
+
+            // Update position only when enough time has accumulated
+            while (accumulator >= targetDelta) {
+              time += 0.002
+
+              // Calculate new position
+              const newX = nodeMesh.position.x + (Math.sin(time * 1.1) / 2) * randomOffset.x
+              const newZ = nodeMesh.position.z + (Math.sin(time * 1.2) / 2) * randomOffset.z
+
+              // Check boundaries
+              const maxRadius = 25
+              const distanceFromCenter = Math.sqrt(newX * newX + newZ * newZ)
+
+              if (distanceFromCenter < maxRadius) {
+                nodeMesh.position.x = newX
+                nodeMesh.position.z = newZ
+              } else {
+                randomOffset = {
+                  x: Math.random() * 0.2 - 0.1,
+                  z: Math.random() * 0.2 - 0.1,
+                }
+              }
+
+              accumulator -= targetDelta
+            }
+
+            lastTime = currentTime
+            requestAnimationFrame(animate)
           }
 
-          lastTime = currentTime
           requestAnimationFrame(animate)
         }
-
-        requestAnimationFrame(animate)
-      }
+      })
     }
-  }, [newNode, setSelectedNode])
+  }, [nodes, setSelectedNode])
 
   return <canvas ref={canvasRef} className="scene"></canvas>
 }
