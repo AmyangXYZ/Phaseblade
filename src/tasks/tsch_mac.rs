@@ -1,30 +1,36 @@
+use std::any::Any;
+
+use rand::Rng;
+
 use crate::message::{Mailbox, Message};
 use crate::node::NodeContext;
+use crate::packet::Packet;
 use crate::task::{Task, TaskExecResult, TaskState, TaskStatus};
-use std::any::Any;
-pub struct SensingTask {
+use crate::tasks::sensing::SensorReadingMessage;
+
+pub struct TSCHMacTask {
     id: u8,
     name: String,
     priority: u8,
-    status: TaskStatus,
     execution_cycles: u64,
+    status: TaskStatus,
     mailbox: Mailbox,
 }
 
-impl SensingTask {
+impl TSCHMacTask {
     pub fn new(id: u8, name: &str, priority: u8) -> Self {
-        SensingTask {
+        TSCHMacTask {
             id,
             name: name.to_string(),
             priority,
+            execution_cycles: 0,
             status: TaskStatus::Blocked,
-            execution_cycles: 5,
             mailbox: Mailbox::new(),
         }
     }
 }
 
-impl Task for SensingTask {
+impl Task for TSCHMacTask {
     fn id(&self) -> u8 {
         self.id
     }
@@ -45,31 +51,33 @@ impl Task for SensingTask {
     }
 
     fn tick(&mut self, context: &NodeContext) {
-        if context.local_time % 100.0 < 1e-4 {
+        if let Some(msg) = self.mailbox.get() {
+            let msg = msg.as_any().downcast_ref::<SensorReadingMessage>().unwrap();
+            println!("{} received reading {:?}", self.name, msg.value);
+        }
+        if context.local_time % 100.0 < 1.0 {
             self.status = TaskStatus::Ready;
-            self.execution_cycles = 3;
+            self.execution_cycles = 5;
         }
     }
 
     fn execute(&mut self, context: &NodeContext) -> TaskExecResult {
         self.execution_cycles -= 1;
         self.status = TaskStatus::Running;
-        let mut messages: Vec<Box<dyn Message>> = Vec::new();
+        let mut packets: Vec<Box<dyn Packet>> = Vec::new();
         if self.execution_cycles == 0 {
             println!("{} done at clock {:?}", self.name, context.local_time);
-            if self.id == 0 {
-                messages.push(Box::new(SensorReadingMessage {
-                    src: self.id,
-                    dst: 1,
-                    priority: 0,
-                    value: 10,
-                }));
-            }
+            packets.push(Box::new(TSCHPacket {
+                uid: rand::thread_rng().gen(),
+                src: self.id,
+                dst: 1,
+                value: 10,
+            }));
             self.status = TaskStatus::Blocked;
         }
         TaskExecResult {
-            messages,
-            packets: Vec::new(),
+            messages: vec![],
+            packets: packets,
         }
     }
 
@@ -77,26 +85,28 @@ impl Task for SensingTask {
         self.mailbox.post(msg);
     }
 }
-
-#[derive(Debug)]
-pub struct SensorReadingMessage {
+pub struct TSCHPacket {
+    uid: u64,
     src: u8,
     dst: u8,
-    priority: u8,
-    pub value: u8,
+    value: u8,
 }
 
-impl Message for SensorReadingMessage {
-    fn src(&self) -> u8 {
-        self.src
+impl Packet for TSCHPacket {
+    fn uid(&self) -> u64 {
+        self.uid
     }
 
-    fn dst(&self) -> u8 {
-        self.dst
+    fn src(&self) -> u16 {
+        self.src as u16
     }
 
-    fn priority(&self) -> u8 {
-        self.priority
+    fn dst(&self) -> u16 {
+        self.dst as u16
+    }
+
+    fn size(&self) -> u64 {
+        self.value as u64
     }
 
     fn as_any(&self) -> &dyn Any {

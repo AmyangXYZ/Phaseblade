@@ -26,7 +26,7 @@ impl PartialOrd for Box<dyn Message> {
 
 impl Ord for Box<dyn Message> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.priority().cmp(&other.priority()) // Higher priority first
+        self.priority().cmp(&other.priority())
     }
 }
 

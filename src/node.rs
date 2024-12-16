@@ -90,7 +90,8 @@ impl Node {
         let mut ready_tasks = Vec::new();
 
         for task in self.tasks.values_mut() {
-            let state = task.state(&self.context);
+            task.tick(&self.context);
+            let state = task.state();
             if state.status != TaskStatus::Blocked {
                 ready_tasks.push((task.id(), task.priority(), state.remaining_cycles));
             }
@@ -132,6 +133,7 @@ impl Node {
             self.schedule();
         }
 
+        let mut packets = Vec::new();
         if let Some(task_id) = self
             .task_schedule
             .get(((self.context.local_cycle - 1) % self.tick_interval) as usize)
@@ -140,16 +142,14 @@ impl Node {
                 let result = task.execute(&self.context);
                 for msg in result.messages {
                     if let Some(dst_task) = self.tasks.get_mut(&msg.dst()) {
-                        println!("task {} sent message to task {}", task_id, dst_task.id());
                         dst_task.post(msg);
                     }
                 }
+                packets.extend(result.packets);
             }
         }
 
-        NodeExecResult {
-            packets: Vec::new(),
-        }
+        NodeExecResult { packets }
     }
 
     pub fn post(&mut self, packet: Box<dyn Packet>) {

@@ -14,6 +14,11 @@ pub struct Engine {
     in_transit_packets: HashMap<u64, Vec<Box<dyn Packet>>>,
 }
 
+impl Engine {
+    pub fn add_node(&mut self, node: Node) {
+        self.nodes.push(node);
+    }
+}
 #[wasm_bindgen]
 impl Engine {
     #[wasm_bindgen(constructor)]
@@ -22,8 +27,8 @@ impl Engine {
             nodes: Vec::new(),
             cycle: 0,
             in_transit_packets: HashMap::new(),
-            propagation_delay: 0,
-            transmission_rate: 0,
+            propagation_delay: 1,
+            transmission_rate: 1,
         }
     }
 
@@ -32,26 +37,7 @@ impl Engine {
         serde_wasm_bindgen::to_value(&EngineState::new(self.cycle)).unwrap()
     }
 
-    #[wasm_bindgen(js_name = addNode)]
-    pub fn add_node(
-        &mut self,
-        id: u16,
-        position: Vec<f64>,
-        cpu_freq_hz: u64,
-        tick_interval: u64,
-        cycle_offset: u64,
-        drift_factor: f64,
-    ) {
-        let node = Node::new(
-            id,
-            position,
-            cpu_freq_hz,
-            tick_interval,
-            cycle_offset,
-            drift_factor,
-        );
-        self.nodes.push(node);
-    }
+    // #[wasm_bindgen(js_name = addNode)]
 
     #[wasm_bindgen]
     pub fn step(&mut self) {
