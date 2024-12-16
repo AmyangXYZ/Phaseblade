@@ -13,21 +13,16 @@ function NodeCard({ selectedNode, nodeState }: { selectedNode: string | null; no
   useEffect(() => {
     if (!nodeState) return
     const schedule: { name: string; value: number; itemStyle: echarts.EChartsOption }[] = []
+
     for (let i = 0; i < nodeState.task_schedule.length; i++) {
-      if (nodeState.task_schedule[i] !== 65535) {
-        schedule.push({
-          name: nodeState.task_names.get(nodeState.task_schedule[i])?.toUpperCase() ?? "UNKNOWN",
-          value: 1,
-          itemStyle: {},
-        })
-      } else {
-        schedule.push({ name: "IDLE", value: 1, itemStyle: { color: "rgba(48, 48, 48, 0.85)" } })
+      const name = nodeState.task_schedule[i]?.toUpperCase()
+      const slot = { name, value: 1, itemStyle: {} }
+      if (name === "IDLE") {
+        slot.itemStyle = { color: "rgba(48, 48, 48, 0.85)" }
       }
+      schedule.push(slot)
     }
 
-    if (schedule.length === 0) {
-      schedule.push({ name: "IDLE", value: 1, itemStyle: { color: "rgba(48, 48, 48, 0.85)" } })
-    }
     setTaskSchedule(schedule)
     setCycle(Number(nodeState.local_cycle))
   }, [nodeState])

@@ -1,12 +1,56 @@
 use crate::packet::Packet;
-use crate::task::{Task, TaskStatus};
+use crate::task::{Task, TaskConfig, TaskStatus};
+use crate::tasks::{SensingTask, TSCHMacTask};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use wasm_bindgen::prelude::*;
 
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NodeConfig {
+    pub id: u16,
+    #[wasm_bindgen(skip)]
+    pub position: Vec<f64>,
+    pub cpu_freq_hz: u64,
+    pub tick_interval: u64,
+    pub cycle_offset: u64,
+    pub clock_drift_factor: f64,
+    #[wasm_bindgen(skip)]
+    pub tasks: Vec<TaskConfig>,
+}
+
+#[wasm_bindgen]
+impl NodeConfig {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        id: u16,
+        position: Vec<f64>,
+        cpu_freq_hz: u64,
+        tick_interval: u64,
+        cycle_offset: u64,
+        clock_drift_factor: f64,
+        tasks: Vec<TaskConfig>,
+    ) -> Self {
+        Self {
+            id,
+            position,
+            cpu_freq_hz,
+            tick_interval,
+            cycle_offset,
+            clock_drift_factor,
+            tasks,
+        }
+    }
+
+    #[wasm_bindgen(js_name = toJs)]
+    pub fn to_js(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(self).unwrap()
+    }
+}
+
 // Node state for frontend visualization
 #[wasm_bindgen]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NodeState {
     pub id: u16,
     #[wasm_bindgen(skip)]
@@ -53,31 +97,41 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(
-        id: u16,
-        position: Vec<f64>,
-        cpu_freq_hz: u64,
-        tick_interval: u64,
-        cycle_offset: u64,
-        clock_drift_factor: f64,
-    ) -> Self {
-        Self {
+    pub fn new(config: NodeConfig) -> Self {
+        let mut node = Self {
             context: NodeContext {
-                id,
-                position,
+                id: config.id,
+                position: config.position,
                 local_cycle: 0,
                 local_time: 0.0,
                 tx_queue: VecDeque::new(),
                 rx_queue: VecDeque::new(),
                 neighbors: Vec::new(),
             },
-            cpu_freq_hz,
-            tick_interval,
-            cycle_offset,
-            clock_drift_factor,
+            cpu_freq_hz: config.cpu_freq_hz,
+            tick_interval: config.tick_interval,
+            cycle_offset: config.cycle_offset,
+            clock_drift_factor: config.clock_drift_factor,
             tasks: HashMap::new(),
             task_schedule: Vec::new(),
+        };
+
+        for task in config.tasks {
+            match task.name().as_str() {
+                "Sensing" => node.register_task(Box::new(SensingTask::new(
+                    task.id,
+                    task.name(),
+                    task.priority,
+                ))),
+                "TSCH MAC" => node.register_task(Box::new(TSCHMacTask::new(
+                    task.id,
+                    task.name(),
+                    task.priority,
+                ))),
+                _ => panic!("Unknown task name: {}", task.name()),
+            }
         }
+        node
     }
 
     pub fn register_task(&mut self, task: Box<dyn Task>) {
@@ -90,7 +144,7 @@ impl Node {
         let mut ready_tasks = Vec::new();
 
         for task in self.tasks.values_mut() {
-            task.tick(&self.context);
+            task.tick(&mut self.context);
             let state = task.state();
             if state.status != TaskStatus::Blocked {
                 ready_tasks.push((task.id(), task.priority(), state.remaining_cycles));
@@ -139,7 +193,7 @@ impl Node {
             .get(((self.context.local_cycle - 1) % self.tick_interval) as usize)
         {
             if let Some(task) = self.tasks.get_mut(task_id) {
-                let result = task.execute(&self.context);
+                let result = task.execute(&mut self.context);
                 for msg in result.messages {
                     if let Some(dst_task) = self.tasks.get_mut(&msg.dst()) {
                         dst_task.post(msg);
@@ -153,7 +207,7 @@ impl Node {
     }
 
     pub fn post(&mut self, packet: Box<dyn Packet>) {
-        self.context.tx_queue.push_back(packet);
+        self.context.rx_queue.push_back(packet);
     }
 
     pub fn state(&self) -> NodeState {

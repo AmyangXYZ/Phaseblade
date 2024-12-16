@@ -12,10 +12,10 @@ pub struct SensingTask {
 }
 
 impl SensingTask {
-    pub fn new(id: u8, name: &str, priority: u8) -> Self {
+    pub fn new(id: u8, name: String, priority: u8) -> Self {
         SensingTask {
             id,
-            name: name.to_string(),
+            name,
             priority,
             status: TaskStatus::Blocked,
             execution_cycles: 5,
@@ -44,14 +44,14 @@ impl Task for SensingTask {
         }
     }
 
-    fn tick(&mut self, context: &NodeContext) {
+    fn tick(&mut self, context: &mut NodeContext) {
         if context.local_time % 100.0 < 1e-4 {
             self.status = TaskStatus::Ready;
             self.execution_cycles = 3;
         }
     }
 
-    fn execute(&mut self, context: &NodeContext) -> TaskExecResult {
+    fn execute(&mut self, context: &mut NodeContext) -> TaskExecResult {
         self.execution_cycles -= 1;
         self.status = TaskStatus::Running;
         let mut messages: Vec<Box<dyn Message>> = Vec::new();

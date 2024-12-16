@@ -7,14 +7,22 @@ import StarIcon from "./assets/icons/star.svg"
 import GasPumpIcon from "./assets/icons/gas-pump.svg"
 import BoxesIcon from "./assets/icons/boxes-stacked.svg"
 
-export interface NodeMeta {
+export interface NodeConfigJS {
   id: number
   unit_type: string
   protocol: string
-  position: [number, number, number]
-  cycle_per_tick: bigint
+  position: Float64Array
+  cpu_freq_hz: bigint
+  tick_interval: bigint
   cycle_offset: bigint
-  micros_per_tick: bigint
+  clock_drift_factor: number
+  tasks: TaskConfigJS[]
+}
+
+export interface TaskConfigJS {
+  id: number
+  name: string
+  priority: number
 }
 
 export interface Unit {

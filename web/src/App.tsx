@@ -5,10 +5,10 @@ import NodeCard from "./NodeCard"
 
 import { useEffect, useState } from "react"
 import { useRef } from "react"
-import { EngineState } from "phaseblade"
+import { EngineState, NodeState } from "phaseblade"
 import { createTheme, ThemeProvider } from "@mui/material/styles"
 import { CssBaseline } from "@mui/material"
-import { NodeMeta } from "./index.d"
+import { NodeConfigJS } from "./index.d"
 
 const darkTheme = createTheme({
   palette: {
@@ -25,7 +25,7 @@ function App() {
   const [engineState, setEngineState] = useState<EngineState>()
   const [cycle, setCycle] = useState<bigint>(0n)
 
-  const [newNode, setNewNode] = useState<NodeMeta | null>(null)
+  const [newNode, setNewNode] = useState<NodeConfigJS | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
 
   useEffect(() => {
@@ -35,7 +35,7 @@ function App() {
 
     workerRef.current.onmessage = (e) => {
       if (e.data.type === "state") {
-        setEngineState(e.data.data)
+        setEngineState(e.data.data as EngineState)
         setCycle(e.data.data.cycle)
       }
     }
@@ -47,7 +47,7 @@ function App() {
     })
   }
 
-  const addNode = (node: NodeMeta) => {
+  const addNode = (node: NodeConfigJS) => {
     workerRef.current?.postMessage({
       method: "add_node",
       params: node,
@@ -62,7 +62,9 @@ function App() {
       <MainScene newNode={newNode} selectedNode={selectedNode} setSelectedNode={setSelectedNode} />
       <NodeCard
         selectedNode={selectedNode}
-        nodeState={engineState?.nodes.find((node) => node.id === Number(selectedNode?.split("-")[1])) || null}
+        nodeState={
+          engineState?.nodes.find((node: NodeState) => node.id === Number(selectedNode?.split("-")[1])) || null
+        }
       />
       <StatusBar cycle={cycle} numNodes={engineState?.nodes.length || 0} />
     </ThemeProvider>

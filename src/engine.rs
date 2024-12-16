@@ -1,4 +1,4 @@
-use crate::node::Node;
+use crate::node::{Node, NodeConfig, NodeState};
 use crate::packet::Packet;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::Instant};
@@ -14,11 +14,6 @@ pub struct Engine {
     in_transit_packets: HashMap<u64, Vec<Box<dyn Packet>>>,
 }
 
-impl Engine {
-    pub fn add_node(&mut self, node: Node) {
-        self.nodes.push(node);
-    }
-}
 #[wasm_bindgen]
 impl Engine {
     #[wasm_bindgen(constructor)]
@@ -34,10 +29,16 @@ impl Engine {
 
     #[wasm_bindgen(js_name = getState)]
     pub fn state(&self) -> JsValue {
-        serde_wasm_bindgen::to_value(&EngineState::new(self.cycle)).unwrap()
+        let nodes = self.nodes.iter().map(|node| node.state()).collect();
+        serde_wasm_bindgen::to_value(&EngineState::new(self.cycle, nodes)).unwrap()
     }
 
-    // #[wasm_bindgen(js_name = addNode)]
+    #[wasm_bindgen(js_name = addNode)]
+    pub fn add_node(&mut self, config: JsValue) {
+        let config: NodeConfig =
+            serde_wasm_bindgen::from_value(config).expect("Failed to parse NodeConfig");
+        self.nodes.push(Node::new(config));
+    }
 
     #[wasm_bindgen]
     pub fn step(&mut self) {
@@ -80,7 +81,7 @@ impl Engine {
 
     #[wasm_bindgen(js_name = availableTasks)]
     pub fn available_tasks(&self) -> JsValue {
-        let tasks = ["Sensing", "Broadcast", "Association", "TSCH"];
+        let tasks = ["Sensing", "TSCH MAC"];
         serde_wasm_bindgen::to_value(&tasks).unwrap()
     }
 }
@@ -89,16 +90,22 @@ impl Engine {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EngineState {
     cycle: u64,
+    nodes: Vec<NodeState>,
 }
 
 #[wasm_bindgen]
 impl EngineState {
-    pub fn new(cycle: u64) -> Self {
-        Self { cycle }
+    pub fn new(cycle: u64, nodes: Vec<NodeState>) -> Self {
+        Self { cycle, nodes }
     }
 
     #[wasm_bindgen(getter)]
     pub fn cycle(&self) -> u64 {
         self.cycle
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn nodes(&self) -> Vec<NodeState> {
+        self.nodes.clone()
     }
 }

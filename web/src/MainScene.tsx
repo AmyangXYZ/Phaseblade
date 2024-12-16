@@ -17,7 +17,7 @@ import { createRadarGround, createTacticalGround, createHexagon, createFlyingLin
 
 import "@babylonjs/core/Meshes/Builders/polygonBuilder"
 
-import { NodeMeta, UnitTypes } from "./index.d.tsx"
+import { NodeConfigJS, UnitTypes } from "./index.d.tsx"
 
 import earcut from "earcut"
 window.earcut = earcut
@@ -27,7 +27,7 @@ function BjsScene({
   selectedNode,
   setSelectedNode,
 }: {
-  newNode: NodeMeta | null
+  newNode: NodeConfigJS | null
   selectedNode: string | null
   setSelectedNode: (node: string | null) => void
 }) {
