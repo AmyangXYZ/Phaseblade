@@ -15,7 +15,8 @@
 .speeddial-icon {
   width: 24px;
   height: 24px;
-  filter: invert(83%) sepia(93%) saturate(1000%) hue-rotate(155deg) brightness(102%) contrast(101%);
+  filter: invert(83%) sepia(93%) saturate(1000%) hue-rotate(155deg)
+    brightness(102%) contrast(101%);
 }
 
 .glow {

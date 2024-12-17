@@ -11,11 +11,13 @@
 }
 
 * {
-  font-family: "FS Sinclair", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "FS Sinclair", Inter, system-ui, Avenir, Helvetica, Arial,
+    sans-serif;
 }
 
 :root {
-  font-family: "FS Sinclair", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "FS Sinclair", Inter, system-ui, Avenir, Helvetica, Arial,
+    sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;

@@ -1,8 +1,22 @@
-import { Box, Fab, SpeedDial, SpeedDialAction, SpeedDialIcon, Tooltip } from "@mui/material"
-import { NodeConfigJS, UnitTypes } from "./index.d.tsx"
-import { NavigateNext } from "@mui/icons-material"
+import {
+  Box,
+  Fab,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
+  Tooltip,
+} from "@mui/material";
+import { UnitTypes } from "./index.d.tsx";
+import { NavigateNext } from "@mui/icons-material";
+import { NodeConfig, TaskConfig } from "phaseblade";
 
-function Header({ step, addNode }: { step: () => void; addNode: (node: NodeConfigJS) => void }) {
+function Header({
+  step,
+  addNode,
+}: {
+  step: () => void;
+  addNode: (node: NodeConfig) => void;
+}) {
   return (
     <div className="header">
       <a href="https://github.com/AmyangXYZ/Phaseblade" target="_blank">
@@ -50,28 +64,25 @@ function Header({ step, addNode }: { step: () => void; addNode: (node: NodeConfi
                 icon={unit.speeddial_icon}
                 tooltipTitle={unit.label}
                 onClick={() =>
-                  addNode({
-                    id: Math.floor(Math.random() * 1000),
-                    unit_type: unit.type,
-                    protocol: "TSCH",
-                    position: new Float64Array([Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20]),
-                    cpu_freq_hz: 100000000n,
-                    tick_interval: 10n,
-                    cycle_offset: 0n,
-                    clock_drift_factor: 1,
-                    tasks: [
-                      {
-                        id: 0,
-                        name: "Sensing",
-                        priority: 0,
-                      },
-                      {
-                        id: 1,
-                        name: "TSCH MAC",
-                        priority: 0,
-                      },
-                    ],
-                  } as NodeConfigJS)
+                  addNode(
+                    new NodeConfig(
+                      Math.floor(Math.random() * 1000),
+                      "c2",
+                      new Float64Array([
+                        Math.random() * 40 - 20,
+                        0.5,
+                        Math.random() * 40 - 20,
+                      ]),
+                      100000000n,
+                      10n,
+                      0n,
+                      1,
+                      [
+                        new TaskConfig(0, "Sensing", 0),
+                        new TaskConfig(1, "TSCH MAC", 0),
+                      ]
+                    )
+                  )
                 }
               />
             ))}
@@ -79,7 +90,7 @@ function Header({ step, addNode }: { step: () => void; addNode: (node: NodeConfi
         </Box>
       </div>
     </div>
-  )
+  );
 }
 
-export default Header
+export default Header;

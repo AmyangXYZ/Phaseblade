@@ -1,8 +1,5 @@
 /* tslint:disable */
 /* eslint-disable */
-/**
- * Manages network simulation by executing nodes and propagating packets between them
- */
 export class Engine {
   free(): void;
   constructor();
@@ -19,46 +16,31 @@ export class Engine {
    * @param {bigint} cycles
    */
   run(cycles: bigint): void;
-  /**
-   * @returns {any}
-   */
-  availableTasks(): any;
 }
 export class EngineState {
   free(): void;
-  /**
-   * @param {bigint} cycle
-   * @param {(NodeState)[]} nodes
-   * @returns {EngineState}
-   */
-  static new(cycle: bigint, nodes: (NodeState)[]): EngineState;
   readonly cycle: bigint;
-  readonly nodes: (NodeState)[];
+  readonly nodes: any[];
 }
 export class NodeConfig {
   free(): void;
   /**
    * @param {number} id
-   * @param {Float64Array} position
    * @param {string} unit_type
+   * @param {Float64Array} position
    * @param {bigint} cpu_freq_hz
    * @param {bigint} tick_interval
    * @param {bigint} cycle_offset
    * @param {number} clock_drift_factor
-   * @param {(TaskConfig)[]} tasks
+   * @param {any[]} tasks
    */
-  constructor(id: number, position: Float64Array, unit_type: string, cpu_freq_hz: bigint, tick_interval: bigint, cycle_offset: bigint, clock_drift_factor: number, tasks: (TaskConfig)[]);
-  clock_drift_factor: number;
-  cpu_freq_hz: bigint;
-  cycle_offset: bigint;
-  id: number;
-  tick_interval: bigint;
+  constructor(id: number, unit_type: string, position: Float64Array, cpu_freq_hz: bigint, tick_interval: bigint, cycle_offset: bigint, clock_drift_factor: number, tasks: any[]);
 }
 export class NodeState {
   free(): void;
-  id: number;
-  local_cycle: bigint;
-  local_time: number;
+  readonly id: number;
+  readonly local_cycle: bigint;
+  readonly local_time: number;
   readonly position: Float64Array;
   readonly task_schedule: (string)[];
   readonly unit_type: string;
@@ -71,63 +53,37 @@ export class TaskConfig {
    * @param {number} priority
    */
   constructor(id: number, name: string, priority: number);
-  id: number;
-  readonly name: string;
-  priority: number;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly __wbg_nodeconfig_free: (a: number, b: number) => void;
-  readonly __wbg_get_nodeconfig_id: (a: number) => number;
-  readonly __wbg_set_nodeconfig_id: (a: number, b: number) => void;
-  readonly __wbg_get_nodeconfig_cpu_freq_hz: (a: number) => number;
-  readonly __wbg_set_nodeconfig_cpu_freq_hz: (a: number, b: number) => void;
-  readonly __wbg_get_nodeconfig_tick_interval: (a: number) => number;
-  readonly __wbg_set_nodeconfig_tick_interval: (a: number, b: number) => void;
-  readonly __wbg_get_nodeconfig_cycle_offset: (a: number) => number;
-  readonly __wbg_set_nodeconfig_cycle_offset: (a: number, b: number) => void;
-  readonly __wbg_get_nodeconfig_clock_drift_factor: (a: number) => number;
-  readonly __wbg_set_nodeconfig_clock_drift_factor: (a: number, b: number) => void;
-  readonly nodeconfig_new: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => number;
-  readonly __wbg_nodestate_free: (a: number, b: number) => void;
-  readonly __wbg_get_nodestate_id: (a: number) => number;
-  readonly __wbg_set_nodestate_id: (a: number, b: number) => void;
-  readonly __wbg_get_nodestate_local_time: (a: number) => number;
-  readonly __wbg_set_nodestate_local_time: (a: number, b: number) => void;
-  readonly nodestate_position: (a: number) => Array;
-  readonly nodestate_unit_type: (a: number) => Array;
-  readonly nodestate_task_schedule: (a: number) => Array;
-  readonly __wbg_get_nodestate_local_cycle: (a: number) => number;
-  readonly __wbg_set_nodestate_local_cycle: (a: number, b: number) => void;
   readonly __wbg_engine_free: (a: number, b: number) => void;
   readonly engine_new: () => number;
   readonly engine_getState: (a: number) => number;
   readonly engine_addNode: (a: number, b: number) => void;
   readonly engine_step: (a: number) => void;
   readonly engine_run: (a: number, b: number) => void;
-  readonly engine_availableTasks: (a: number) => number;
-  readonly __wbg_enginestate_free: (a: number, b: number) => void;
-  readonly enginestate_new: (a: number, b: number, c: number) => number;
-  readonly enginestate_cycle: (a: number) => number;
-  readonly enginestate_nodes: (a: number) => Array;
-  readonly __wbg_taskconfig_free: (a: number, b: number) => void;
-  readonly __wbg_get_taskconfig_id: (a: number) => number;
-  readonly __wbg_set_taskconfig_id: (a: number, b: number) => void;
-  readonly __wbg_get_taskconfig_priority: (a: number) => number;
-  readonly __wbg_set_taskconfig_priority: (a: number, b: number) => void;
+  readonly __wbg_nodeconfig_free: (a: number, b: number) => void;
+  readonly nodeconfig_new: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => number;
   readonly taskconfig_new: (a: number, b: number, c: number, d: number) => number;
-  readonly taskconfig_name: (a: number) => Array;
+  readonly __wbg_enginestate_free: (a: number, b: number) => void;
+  readonly enginestate_cycle: (a: number) => number;
+  readonly enginestate_nodes: (a: number, b: number) => void;
+  readonly __wbg_nodestate_free: (a: number, b: number) => void;
+  readonly nodestate_id: (a: number) => number;
+  readonly nodestate_position: (a: number, b: number) => void;
+  readonly nodestate_unit_type: (a: number, b: number) => void;
+  readonly nodestate_local_cycle: (a: number) => number;
+  readonly nodestate_local_time: (a: number) => number;
+  readonly nodestate_task_schedule: (a: number, b: number) => void;
+  readonly __wbg_taskconfig_free: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
-  readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly __externref_table_alloc: () => number;
+  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
-  readonly __externref_drop_slice: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
-  readonly __wbindgen_start: () => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

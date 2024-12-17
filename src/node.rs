@@ -3,31 +3,24 @@ use crate::task::{Task, TaskConfig, TaskStatus};
 use crate::tasks::{SensingTask, TSCHMacTask};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NodeConfig {
     pub id: u16,
-    #[wasm_bindgen(skip)]
-    pub position: Vec<f64>,
-    #[wasm_bindgen(skip)]
     pub unit_type: String,
+    pub position: Vec<f64>,
     pub cpu_freq_hz: u64,
     pub tick_interval: u64,
     pub cycle_offset: u64,
     pub clock_drift_factor: f64,
-    #[wasm_bindgen(skip)]
     pub tasks: Vec<TaskConfig>,
 }
 
-#[wasm_bindgen]
 impl NodeConfig {
-    #[wasm_bindgen(constructor)]
     pub fn new(
         id: u16,
-        position: Vec<f64>,
         unit_type: String,
+        position: Vec<f64>,
         cpu_freq_hz: u64,
         tick_interval: u64,
         cycle_offset: u64,
@@ -36,8 +29,8 @@ impl NodeConfig {
     ) -> Self {
         Self {
             id,
-            position,
             unit_type,
+            position,
             cpu_freq_hz,
             tick_interval,
             cycle_offset,
@@ -48,36 +41,14 @@ impl NodeConfig {
 }
 
 // Node state for frontend visualization
-#[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NodeState {
     pub id: u16,
-    #[wasm_bindgen(skip)]
     pub position: Vec<f64>,
-    #[wasm_bindgen(skip)]
     pub unit_type: String,
     pub local_cycle: u64,
     pub local_time: f64,
-    #[wasm_bindgen(skip)]
     pub task_schedule: Vec<String>,
-}
-
-#[wasm_bindgen]
-impl NodeState {
-    #[wasm_bindgen(getter)]
-    pub fn position(&self) -> Vec<f64> {
-        self.position.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn unit_type(&self) -> String {
-        self.unit_type.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn task_schedule(&self) -> Vec<String> {
-        self.task_schedule.clone()
-    }
 }
 
 // Node context needed for task execution
@@ -125,18 +96,18 @@ impl Node {
         };
 
         for task in config.tasks {
-            match task.name().as_str() {
+            match task.name.as_str() {
                 "Sensing" => node.register_task(Box::new(SensingTask::new(
                     task.id,
-                    task.name(),
+                    task.name,
                     task.priority,
                 ))),
                 "TSCH MAC" => node.register_task(Box::new(TSCHMacTask::new(
                     task.id,
-                    task.name(),
+                    task.name,
                     task.priority,
                 ))),
-                _ => panic!("Unknown task name: {}", task.name()),
+                _ => panic!("Unknown task name: {}", task.name),
             }
         }
         node

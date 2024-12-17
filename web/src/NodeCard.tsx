@@ -1,36 +1,50 @@
-import { useEffect, useRef, useState } from "react"
-import * as echarts from "echarts"
-import Card from "./components/Card"
-import { UnitTypes } from "./index.d.tsx"
-import { NodeState } from "phaseblade"
+import { useEffect, useRef, useState } from "react";
+import * as echarts from "echarts";
+import Card from "./components/Card";
+import { UnitTypes } from "./index.d.tsx";
+import { NodeState } from "phaseblade";
 
-function NodeCard({ selectedNode, nodeState }: { selectedNode: number | null; nodeState: NodeState | null }) {
-  const taskScheduleChartRef = useRef<echarts.EChartsType | null>(null)
-  const taskScheduleChartDomRef = useRef<HTMLDivElement>(null)
-  const [taskSchedule, setTaskSchedule] = useState<{ name: string; value: number }[]>([])
-  const [cycle, setCycle] = useState<number>(0)
+function NodeCard({
+  selectedNode,
+  nodeState,
+}: {
+  selectedNode: number | null;
+  nodeState: NodeState | null;
+}) {
+  const taskScheduleChartRef = useRef<echarts.EChartsType | null>(null);
+  const taskScheduleChartDomRef = useRef<HTMLDivElement>(null);
+  const [taskSchedule, setTaskSchedule] = useState<
+    { name: string; value: number }[]
+  >([]);
+  const [cycle, setCycle] = useState<number>(0);
 
   useEffect(() => {
-    if (!nodeState) return
-    const schedule: { name: string; value: number; itemStyle: echarts.EChartsOption }[] = []
+    if (!nodeState) return;
+    const schedule: {
+      name: string;
+      value: number;
+      itemStyle: echarts.EChartsOption;
+    }[] = [];
 
     for (let i = 0; i < nodeState.task_schedule.length; i++) {
-      const name = nodeState.task_schedule[i]?.toUpperCase()
-      const slot = { name, value: 1, itemStyle: {} }
+      const name = nodeState.task_schedule[i]?.toUpperCase();
+      const slot = { name, value: 1, itemStyle: {} };
       if (name === "IDLE") {
-        slot.itemStyle = { color: "rgba(48, 48, 48, 0.85)" }
+        slot.itemStyle = { color: "rgba(48, 48, 48, 0.85)" };
       }
-      schedule.push(slot)
+      schedule.push(slot);
     }
 
-    setTaskSchedule(schedule)
-    setCycle(Number(nodeState.local_cycle))
-  }, [nodeState])
+    setTaskSchedule(schedule);
+    setCycle(Number(nodeState.local_cycle));
+  }, [nodeState]);
 
   useEffect(() => {
-    if (!taskScheduleChartDomRef.current) return
+    if (!taskScheduleChartDomRef.current) return;
     if (!taskScheduleChartRef.current) {
-      taskScheduleChartRef.current = echarts.init(taskScheduleChartDomRef.current)
+      taskScheduleChartRef.current = echarts.init(
+        taskScheduleChartDomRef.current
+      );
     }
     const option = {
       legend: {
@@ -88,36 +102,47 @@ function NodeCard({ selectedNode, nodeState }: { selectedNode: number | null; no
               show: true,
             },
           },
-          data: [{ value: 700, name: "IDLE", itemStyle: { color: "rgba(48, 48, 48, 0.85)" } }],
+          data: [
+            {
+              value: 700,
+              name: "IDLE",
+              itemStyle: { color: "rgba(48, 48, 48, 0.85)" },
+            },
+          ],
           animation: false,
           silent: true,
         },
       ],
-    }
-    taskScheduleChartRef.current.setOption(option)
+    };
+    taskScheduleChartRef.current.setOption(option);
 
     return () => {
-      taskScheduleChartRef.current?.dispose()
-      taskScheduleChartRef.current = null
-    }
-  }, [selectedNode])
+      taskScheduleChartRef.current?.dispose();
+      taskScheduleChartRef.current = null;
+    };
+  }, [selectedNode]);
 
   useEffect(() => {
     taskScheduleChartRef.current?.setOption({
       series: [
         {
           data: taskSchedule,
-          startAngle: ((Number(cycle) - 1 + 0.5) * (360 / taskSchedule.length) - 90) % 360,
+          startAngle:
+            ((Number(cycle) - 1 + 0.5) * (360 / taskSchedule.length) - 90) %
+            360,
         },
       ],
-    })
-    taskScheduleChartRef.current?.dispatchAction({ type: "downplay", seriesIndex: 0 })
+    });
+    taskScheduleChartRef.current?.dispatchAction({
+      type: "downplay",
+      seriesIndex: 0,
+    });
     taskScheduleChartRef.current?.dispatchAction({
       type: "highlight",
       seriesIndex: 0,
       dataIndex: (Number(cycle) - 1) % taskSchedule.length,
-    })
-  }, [cycle, taskSchedule])
+    });
+  }, [cycle, taskSchedule]);
 
   return (
     <>
@@ -131,7 +156,10 @@ function NodeCard({ selectedNode, nodeState }: { selectedNode: number | null; no
               <>
                 <div>Retrieve and transmit the vital research data.</div>
                 <div>Local cycle: {cycle}</div>
-                <div ref={taskScheduleChartDomRef} style={{ width: "373px", height: "300px" }}></div>
+                <div
+                  ref={taskScheduleChartDomRef}
+                  style={{ width: "373px", height: "300px" }}
+                ></div>
               </>
             }
             footer="SELECT MISSION"
@@ -147,7 +175,7 @@ function NodeCard({ selectedNode, nodeState }: { selectedNode: number | null; no
         </>
       )}
     </>
-  )
+  );
 }
 
-export default NodeCard
+export default NodeCard;

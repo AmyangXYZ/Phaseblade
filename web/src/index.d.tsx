@@ -1,36 +1,18 @@
-import TruckIcon from "./assets/icons/truck-fast.svg"
-import DroneIcon from "./assets/icons/drone.svg"
-import DatabaseIcon from "./assets/icons/database.svg"
-import ChessRookIcon from "./assets/icons/chess-rook.svg"
-import IndustryIcon from "./assets/icons/industry-windows.svg"
-import StarIcon from "./assets/icons/star.svg"
-import GasPumpIcon from "./assets/icons/gas-pump.svg"
-import BoxesIcon from "./assets/icons/boxes-stacked.svg"
-
-export interface NodeConfigJS {
-  id: number
-  unit_type: string
-  protocol: string
-  position: Float64Array
-  cpu_freq_hz: bigint
-  tick_interval: bigint
-  cycle_offset: bigint
-  clock_drift_factor: number
-  tasks: TaskConfigJS[]
-}
-
-export interface TaskConfigJS {
-  id: number
-  name: string
-  priority: number
-}
+import TruckIcon from "./assets/icons/truck-fast.svg";
+import DroneIcon from "./assets/icons/drone.svg";
+import DatabaseIcon from "./assets/icons/database.svg";
+import ChessRookIcon from "./assets/icons/chess-rook.svg";
+import IndustryIcon from "./assets/icons/industry-windows.svg";
+import StarIcon from "./assets/icons/star.svg";
+import GasPumpIcon from "./assets/icons/gas-pump.svg";
+import BoxesIcon from "./assets/icons/boxes-stacked.svg";
 
 export interface Unit {
-  type: string
-  label: string
-  icon: string
-  isStatic: boolean
-  speeddial_icon: React.ReactNode
+  type: string;
+  label: string;
+  icon: string;
+  isStatic: boolean;
+  speeddial_icon: React.ReactNode;
 }
 
 export const UnitTypes: Record<string, Unit> = {
@@ -90,4 +72,4 @@ export const UnitTypes: Record<string, Unit> = {
     isStatic: true,
     speeddial_icon: <img src={BoxesIcon} className="speeddial-icon" />,
   },
-}
+};

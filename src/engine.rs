@@ -2,10 +2,9 @@ use crate::node::{Node, NodeConfig, NodeState};
 use crate::packet::Packet;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::Instant};
-use wasm_bindgen::prelude::*;
 
 /// Manages network simulation by executing nodes and propagating packets between them
-#[wasm_bindgen]
+
 pub struct Engine {
     nodes: Vec<Node>,
     cycle: u64, // CPU cycle counter, e.g., a cycle represents 10ns @ 100MHz CPU frequency
@@ -14,9 +13,7 @@ pub struct Engine {
     in_transit_packets: HashMap<u64, Vec<Box<dyn Packet>>>,
 }
 
-#[wasm_bindgen]
 impl Engine {
-    #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
             nodes: Vec::new(),
@@ -27,20 +24,15 @@ impl Engine {
         }
     }
 
-    #[wasm_bindgen(js_name = getState)]
-    pub fn state(&self) -> JsValue {
+    pub fn state(&self) -> EngineState {
         let nodes = self.nodes.iter().map(|node| node.state()).collect();
-        serde_wasm_bindgen::to_value(&EngineState::new(self.cycle, nodes)).unwrap()
+        EngineState::new(self.cycle, nodes)
     }
 
-    #[wasm_bindgen(js_name = addNode)]
-    pub fn add_node(&mut self, config: JsValue) {
-        let config: NodeConfig =
-            serde_wasm_bindgen::from_value(config).expect("Failed to parse NodeConfig");
+    pub fn add_node(&mut self, config: NodeConfig) {
         self.nodes.push(Node::new(config));
     }
 
-    #[wasm_bindgen]
     pub fn step(&mut self) {
         self.cycle += 1;
         // println!("Cycle {}", self.cycle);
@@ -68,7 +60,6 @@ impl Engine {
         }
     }
 
-    #[wasm_bindgen]
     pub fn run(&mut self, cycles: u64) {
         let start = Instant::now();
         let total_cycles = self.cycle + cycles;
@@ -79,33 +70,19 @@ impl Engine {
         println!("Simulated {} cycles in {:?}", self.cycle, start.elapsed());
     }
 
-    #[wasm_bindgen(js_name = availableTasks)]
-    pub fn available_tasks(&self) -> JsValue {
-        let tasks = ["Sensing", "TSCH MAC"];
-        serde_wasm_bindgen::to_value(&tasks).unwrap()
+    pub fn available_tasks(&self) -> Vec<String> {
+        ["Sensing", "TSCH MAC"].map(String::from).to_vec()
     }
 }
 
-#[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EngineState {
-    cycle: u64,
-    nodes: Vec<NodeState>,
+    pub cycle: u64,
+    pub nodes: Vec<NodeState>,
 }
 
-#[wasm_bindgen]
 impl EngineState {
     pub fn new(cycle: u64, nodes: Vec<NodeState>) -> Self {
         Self { cycle, nodes }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn cycle(&self) -> u64 {
-        self.cycle
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn nodes(&self) -> Vec<NodeState> {
-        self.nodes.clone()
     }
 }

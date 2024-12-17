@@ -2,7 +2,6 @@ use crate::message::Message;
 use crate::node::NodeContext;
 use crate::packet::Packet;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 
 /// RTOS-like preemptable task, to be scheduled and executed in the node
 pub trait Task {
@@ -32,27 +31,19 @@ pub struct TaskState {
     pub remaining_cycles: u64,
 }
 
-#[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TaskConfig {
     pub id: u8,
-    name: String,
+    pub name: String,
     pub priority: u8,
 }
 
-#[wasm_bindgen]
 impl TaskConfig {
-    #[wasm_bindgen(constructor)]
     pub fn new(id: u8, name: &str, priority: u8) -> Self {
         Self {
             id,
             name: name.to_string(),
             priority,
         }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn name(&self) -> String {
-        self.name.clone()
     }
 }

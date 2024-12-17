@@ -1,4 +1,4 @@
-import "./Card.css"
+import "./Card.css";
 
 function Card({
   title,
@@ -10,17 +10,20 @@ function Card({
   outlineColor,
   style,
 }: {
-  title?: string
-  subtitle?: string
-  icon?: React.ReactNode
-  body: React.ReactNode
-  footer?: string
-  width?: string
-  outlineColor?: string
-  style?: React.CSSProperties
+  title?: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  body: React.ReactNode;
+  footer?: string;
+  width?: string;
+  outlineColor?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <div className="card-outline" style={{ width, borderColor: outlineColor, ...style }}>
+    <div
+      className="card-outline"
+      style={{ width, borderColor: outlineColor, ...style }}
+    >
       <div className="card">
         {title && (
           <>
@@ -34,7 +37,11 @@ function Card({
             <div className="card-header-divider" />
           </>
         )}
-        {title && body ? <div className="card-body">{body}</div> : <div className="card-body-compact">{body}</div>}
+        {title && body ? (
+          <div className="card-body">{body}</div>
+        ) : (
+          <div className="card-body-compact">{body}</div>
+        )}
         {title && footer && (
           <>
             <div className="card-footer-divider" />
@@ -43,7 +50,7 @@ function Card({
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Card
+export default Card;

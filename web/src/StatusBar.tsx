@@ -1,13 +1,24 @@
-import { NotificationsNone } from "@mui/icons-material"
-import { IconButton, Tooltip } from "@mui/material"
-import SwordIcon from "./assets/icons/sword.svg"
+import { NotificationsNone } from "@mui/icons-material";
+import { IconButton, Tooltip } from "@mui/material";
+import SwordIcon from "./assets/icons/sword.svg";
 
-export default function StatusBar({ cycle, numNodes }: { cycle: bigint; numNodes: number }) {
+export default function StatusBar({
+  cycle,
+  numNodes,
+}: {
+  cycle: bigint;
+  numNodes: number;
+}) {
   return (
     <div className="status-bar">
       <div className="status-bar-left">
         <div className="status-bar-item">
-          <img src={SwordIcon} alt="Sword" height={16} style={{ marginTop: 6 }} />
+          <img
+            src={SwordIcon}
+            alt="Sword"
+            height={16}
+            style={{ marginTop: 6 }}
+          />
         </div>
         <div className="status-bar-item">Protocol: TSCH</div>
 
@@ -30,5 +41,5 @@ export default function StatusBar({ cycle, numNodes }: { cycle: bigint; numNodes
         </IconButton>
       </div>
     </div>
-  )
+  );
 }
