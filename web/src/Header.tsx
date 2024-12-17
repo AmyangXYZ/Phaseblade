@@ -1,22 +1,9 @@
-import {
-  Box,
-  Fab,
-  SpeedDial,
-  SpeedDialAction,
-  SpeedDialIcon,
-  Tooltip,
-} from "@mui/material";
-import { UnitTypes } from "./index.d.tsx";
-import { NavigateNext } from "@mui/icons-material";
-import { NodeConfig, TaskConfig } from "phaseblade";
+import { Box, Fab, SpeedDial, SpeedDialAction, SpeedDialIcon, Tooltip } from "@mui/material"
+import { UnitTypes } from "./index.d.tsx"
+import { NavigateNext } from "@mui/icons-material"
+import { NodeConfig, TaskConfig } from "phaseblade"
 
-function Header({
-  step,
-  addNode,
-}: {
-  step: () => void;
-  addNode: (node: NodeConfig) => void;
-}) {
+function Header({ step, addNode }: { step: () => void; addNode: (node: NodeConfig) => void }) {
   return (
     <div className="header">
       <a href="https://github.com/AmyangXYZ/Phaseblade" target="_blank">
@@ -67,20 +54,13 @@ function Header({
                   addNode(
                     new NodeConfig(
                       Math.floor(Math.random() * 1000),
-                      "c2",
-                      new Float64Array([
-                        Math.random() * 40 - 20,
-                        0.5,
-                        Math.random() * 40 - 20,
-                      ]),
-                      100000000n,
+                      unit.type,
+                      new Float64Array([Math.random() * 40 - 20, 0.5, Math.random() * 40 - 20]),
+                      100_000_000n,
                       10n,
                       0n,
                       1,
-                      [
-                        new TaskConfig(0, "Sensing", 0),
-                        new TaskConfig(1, "TSCH MAC", 0),
-                      ]
+                      [new TaskConfig(0, "Sensing", 0), new TaskConfig(1, "TSCH MAC", 0)]
                     )
                   )
                 }
@@ -90,7 +70,7 @@ function Header({
         </Box>
       </div>
     </div>
-  );
+  )
 }
 
-export default Header;
+export default Header
